@@ -219,3 +219,8 @@ cull:
 
 debug:
   enabled: false
+
+
+scheduler:
+  enabled: false
+  replicas: 1
