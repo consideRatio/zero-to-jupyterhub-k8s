@@ -1,13 +1,10 @@
-{{ if .Values.scheduler.enabled -}}
+{{- if .Values.scheduler.enabled -}}
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
+  name: scheduler
   labels:
-    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
-    component: scheduler
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
-  name: {{ .Chart.Name }}-scheduler
+    {{- include "jupyterhub.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.scheduler.replicas }}
   template:
@@ -16,37 +13,29 @@ spec:
         # This lets us autorestart when the configmap changes!
         checksum/config-map: {{ include (print $.Template.BasePath "/scheduler/configmap.yaml") . | sha256sum }}
       labels:
-        chart: {{ .Chart.Name }}-{{ .Chart.Version }}
-        component: scheduler
-        heritage: {{ .Release.Service }}
-        release: {{ .Release.Name }}
+        {{- /* Changes here will cause the Deployment to restart the pods. */}}
+        {{- include "jupyterhub.matchLabels" . | nindent 8 }}
     spec:
-      volumes:
-      - name: config
-        configMap:
-          name: {{ .Chart.Name }}-scheduler-config
+      serviceAccountName: scheduler
       containers:
-      - command:
+      - name: scheduler
+        image: gcr.io/google_containers/kube-scheduler-amd64:v1.10.4
+        command:
         - /usr/local/bin/kube-scheduler
         - --address=0.0.0.0
+        - --scheduler-name=jupyterhub-scheduler
+        - --policy-configmap=scheduler
+        - --policy-configmap-namespace={{ .Release.Namespace }}
         - --leader-elect=true
-        - --scheduler-name={{ .Chart.Name }}-{{ .Release.Name }}-scheduler
+        - --leader-elect-resource-lock=configmaps
+        - --lock-object-name=scheduler
         - --lock-object-namespace={{ .Release.Namespace }}
-        - --lock-object-name={{ .Chart.Name }}-{{ .Release.Name }}-scheduler-lock
-        - -v=4
-        - --policy-config-file=/etc/kube-scheduler/policy.json
-        - --use-legacy-policy-config
-        image: gcr.io/google_containers/kube-scheduler-amd64:v1.9.0
-        volumeMounts:
-        - name: config
-          mountPath: /etc/kube-scheduler
-          readOnly: true
+        - --v=4
         livenessProbe:
           httpGet:
             path: /healthz
             port: 10251
           initialDelaySeconds: 15
-        name: scheduler
         readinessProbe:
           httpGet:
             path: /healthz
@@ -55,5 +44,4 @@ spec:
           requests:
             cpu: 1
             memory: 2Gi
-      serviceAccountName: {{ .Chart.Name }}-{{ .Release.Name }}-scheduler
-{{- end -}}
+{{- end }}

@@ -317,8 +317,11 @@ if not cloud_metadata.get('enabled', False):
 
     c.KubeSpawner.singleuser_init_containers.append(ip_block_container)
 
-scheduler_strategy = get_config('singleuser.scheduler-strategy', 'spread')
+scheduler_name = get_config('kubespawner.scheduler-name', None)
+if scheduler_name:
+    c.KubeSpawner.scheduler_name = scheduler_name
 
+scheduler_strategy = get_config('singleuser.scheduler-strategy', 'spread')
 if scheduler_strategy == 'pack':
     # FIXME: Support setting affinity directly in KubeSpawner
     c.KubeSpawner.singleuser_extra_pod_config = {

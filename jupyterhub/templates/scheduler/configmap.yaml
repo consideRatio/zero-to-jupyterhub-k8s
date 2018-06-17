@@ -1,10 +1,10 @@
-{{ if .Values.scheduler.enabled -}}
+{{- if .Values.scheduler.enabled -}}
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: {{ .Chart.Name }}-scheduler-config
+  name: scheduler
 data:
-  policy.json: |
+  policy.cfg: |
     {
       "kind": "Policy",
       "apiVersion": "v1",
@@ -111,5 +111,4 @@ data:
       "hardPodAffinitySymmetricWeight" : 10,
       "alwaysCheckAllPredicates" : true
     }
-
-{{ end }}
+{{- end }}
