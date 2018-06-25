@@ -49,6 +49,7 @@ c.KubeSpawner.singleuser_image_spec = os.environ['SINGLEUSER_IMAGE']
 c.KubeSpawner.singleuser_image_pull_policy = get_config('singleuser.image-pull-policy')
 
 c.KubeSpawner.singleuser_extra_labels = get_config('singleuser.extra-labels', {})
+c.KubeSpawner.user_storage_extra_labels = get_config('singleuser.user-storage-extra-labels', {})
 
 c.KubeSpawner.singleuser_uid = get_config('singleuser.uid')
 c.KubeSpawner.singleuser_fs_gid = get_config('singleuser.fs-gid')
