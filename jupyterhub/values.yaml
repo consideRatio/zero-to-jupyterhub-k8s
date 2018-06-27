@@ -144,7 +144,7 @@ singleuser:
               except:
                 - 169.254.169.254/32
   extraLabels: {}
-  userStorageExtraLabels: {}
+  storageExtraLabels: {}
   extraEnv: {}
   lifecycleHooks:
   initContainers:
@@ -182,6 +182,20 @@ singleuser:
   defaultUrl:
 
 
+placeholder:
+  fixed:
+    enabled: true
+    replicas: 1
+  perNode:
+    enabled: true
+    replicas: 1
+
+
+scheduler:
+  enabled: false
+  replicas: 1
+
+
 prePuller:
   hook:
     enabled: true
@@ -195,7 +209,7 @@ prePuller:
   pause:
     image:
       name: gcr.io/google_containers/pause
-      tag: '3.0'
+      tag: '3.1'
 
 
 ingress:
@@ -220,8 +234,3 @@ cull:
 
 debug:
   enabled: false
-
-
-scheduler:
-  enabled: false
-  replicas: 1

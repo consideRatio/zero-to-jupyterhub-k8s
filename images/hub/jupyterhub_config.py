@@ -49,7 +49,7 @@ c.KubeSpawner.singleuser_image_spec = os.environ['SINGLEUSER_IMAGE']
 c.KubeSpawner.singleuser_image_pull_policy = get_config('singleuser.image-pull-policy')
 
 c.KubeSpawner.singleuser_extra_labels = get_config('singleuser.extra-labels', {})
-c.KubeSpawner.user_storage_extra_labels = get_config('singleuser.user-storage-extra-labels', {})
+c.KubeSpawner.storage_extra_labels = get_config('singleuser.storage-extra-labels', {})
 
 c.KubeSpawner.singleuser_uid = get_config('singleuser.uid')
 c.KubeSpawner.singleuser_fs_gid = get_config('singleuser.fs-gid')
@@ -322,43 +322,41 @@ scheduler_name = get_config('kubespawner.scheduler-name', None)
 if scheduler_name:
     c.KubeSpawner.scheduler_name = scheduler_name
 
+c.KubeSpawner.singleuser_extra_pod_config = {
+    'affinity': {
+        'nodeAffinity': {
+            'preferredDuringSchedulingIgnoredDuringExecution': [{
+                'preference': {
+                    'matchExpressions': [{
+                        'key': 'hub.jupyter.org/purpose',
+                        'operator': 'In',
+                        'values': ['user']
+                    }]
+                },
+                'weight': 10
+            }]
+        }
+    }
+}
+
 scheduler_strategy = get_config('singleuser.scheduler-strategy', 'spread')
 if scheduler_strategy == 'pack':
     # FIXME: Support setting affinity directly in KubeSpawner
-    c.KubeSpawner.singleuser_extra_pod_config = {
-        'affinity': {
-            'podAffinity': {
-                'preferredDuringSchedulingIgnoredDuringExecution': [{
-                    'weight': 50,
-                    'podAffinityTerm': {
-                        'labelSelector': {
-                            'matchExpressions': [{
-                                'key': 'component',
-                                'operator': 'In',
-                                'values': ['hub']
-                            }]
-                        },
-                        'topologyKey': 'kubernetes.io/hostname'
-                    }
-                }, {
-                    'weight': 5,
-                    'podAffinityTerm': {
-                        'labelSelector': {
-                            'matchExpressions': [{
-                                'key': 'component',
-                                'operator': 'In',
-                                'values': ['singleuser-server']
-                            }]
-                        },
-                        'topologyKey': 'kubernetes.io/hostname'
-                    }
-                }],
-            }
-        }
+    c.KubeSpawner.singleuser_extra_pod_config['affinity']['podAffinity'] = {
+        'preferredDuringSchedulingIgnoredDuringExecution': [{
+            'podAffinityTerm': {
+                'labelSelector': {
+                    'matchExpressions': [{
+                        'key': 'component',
+                        'operator': 'In',
+                        'values': ['singleuser-server']
+                    }]
+                },
+                'topologyKey': 'kubernetes.io/hostname'
+            },
+            'weight': 10
+        }]
     }
-else:
-    # Set default to {} so subconfigs can easily update it
-    c.KubeSpawner.singleuser_extra_pod_config = {}
 
 if get_config('debug.enabled', False):
     c.JupyterHub.log_level = 'DEBUG'

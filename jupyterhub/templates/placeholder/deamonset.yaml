@@ -1,0 +1,25 @@
+{{- if .Values.placeholder.perNode.enabled }}
+{{- $_ := merge (dict "componentLabel" "placeholder-per-node" "perNode" true) . -}}
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: placeholder-per-node
+  labels:
+    {{- include "jupyterhub.labels" $_ | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "jupyterhub.matchLabels" $_ | nindent 6 }}
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 100%
+      maxSurge: 100%
+  template:
+    metadata:
+      labels:
+        {{- /* Changes here will cause the DaemonSet to restart the pods. */}}
+        {{- include "jupyterhub.matchLabels" $_ | nindent 8 }}
+    spec:
+      {{- include "jupyterhub.placeholder.pod-spec" $_ | nindent 6 }}
+{{- end }}

@@ -1,7 +1,7 @@
 {{- $HTTPS := (and .Values.proxy.https.hosts .Values.proxy.https.enabled) }}
 {{- $autoHTTPS := (and $HTTPS (eq .Values.proxy.https.type "letsencrypt")) }}
 {{- if $autoHTTPS -}}
-apiVersion: apps/v1beta2
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: autohttps
@@ -38,19 +38,15 @@ spec:
       nodeSelector: {{ toJson .Values.proxy.nodeSelector }}
       terminationGracePeriodSeconds: 60
       affinity:
-        podAffinity:
+        nodeAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 1
-              podAffinityTerm:
-                topologyKey: kubernetes.io/hostname
-                labelSelector:
-                  matchExpressions:
-                    - key: component
-                      operator: In
-                      values: ['hub']
-                    - key: release
-                      operator: In
-                      values: [{{ .Release.Name | quote }}]
+            - preference:
+                matchExpressions:
+                  - key: hub.jupyter.org/purpose
+                    operator: In
+                    values: 
+                      - core
+              weight: 10
       containers:
         - name: nginx
           image: "{{ .Values.proxy.nginx.image.name }}:{{ .Values.proxy.nginx.image.tag }}"

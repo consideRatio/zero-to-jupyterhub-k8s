@@ -1,0 +1,26 @@
+{{- if .Values.placeholder.fixed.enabled }}
+{{- $_ := merge (dict "componentLabel" "placeholder-fixed") . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: placeholder-fixed
+  labels:
+    {{- include "jupyterhub.labels" $_ | nindent 4 }}
+spec:
+  replicas: {{ .Values.placeholder.fixed.replicas }}
+  selector:
+    matchLabels:
+      {{- include "jupyterhub.matchLabels" $_ | nindent 6 }}
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 100%
+      maxSurge: 100%
+  template:
+    metadata:
+      labels:
+        {{- /* Changes here will cause the Deployment to restart the pods. */}}
+        {{- include "jupyterhub.matchLabels" $_ | nindent 8 }}
+    spec:
+      {{- include "jupyterhub.placeholder.pod-spec" $_ | nindent 6 }}
+{{- end }}
