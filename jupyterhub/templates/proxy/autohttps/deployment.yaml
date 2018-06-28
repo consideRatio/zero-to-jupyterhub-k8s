@@ -30,6 +30,7 @@ spec:
         {{- /* Changes here will cause the Deployment to restart the pods. */}}
         {{- $_ := merge (dict "appLabel" "kube-lego") . }}
         {{- include "jupyterhub.matchLabels" $_ | nindent 8 }}
+        hub.jupyter.org/pod-category: "core"
         hub.jupyter.org/network-access-proxy-http: "true"
     spec:
       {{- if .Values.rbac.enabled }}
@@ -42,7 +43,7 @@ spec:
           preferredDuringSchedulingIgnoredDuringExecution:
             - preference:
                 matchExpressions:
-                  - key: hub.jupyter.org/purpose
+                  - key: hub.jupyter.org/node-purpose
                     operator: In
                     values: 
                       - core

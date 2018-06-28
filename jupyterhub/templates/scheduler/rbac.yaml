@@ -1,20 +1,61 @@
 {{- if .Values.scheduler.enabled -}}
+{{- if .Values.rbac.enabled }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: scheduler
-{{- if .Values.rbac.enabled }}
+  namespace: kube-system
+  labels:
+    {{- include "jupyterhub.labels" . | nindent 4 }}
+---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: scheduler
+  name: scheduler-system
+  namespace: kube-system
+  labels:
+    {{- $_ := merge (dict "componentSuffix" "-additional") . }}
+    {{- include "jupyterhub.labels" $_ | nindent 4 }}
 subjects:
-- kind: ServiceAccount
-  name: scheduler
-  namespace: {{ .Release.Namespace }}
+  - kind: ServiceAccount
+    name: scheduler
+    namespace: kube-system
 roleRef:
   kind: ClusterRole
-  name: system:kube-scheduler
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: scheduler-additional
+  namespace: kube-system
+  labels:
+    {{- $_ := merge (dict "componentSuffix" "-additional") . }}
+    {{- include "jupyterhub.labels" $_ | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get"]
+  - apiGroups: ["storage"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: scheduler-additional
+  namespace: kube-system
+  labels:
+    {{- $_ := merge (dict "componentSuffix" "-additional") . }}
+    {{- include "jupyterhub.labels" $_ | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: scheduler
+    namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: scheduler-additional
   apiGroup: rbac.authorization.k8s.io
 {{- end }}
 {{- end }}

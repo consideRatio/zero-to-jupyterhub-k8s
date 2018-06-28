@@ -1,0 +1,23 @@
+{{- /*
+The default resource request - whatever a singleuser requests.
+*/}}
+{{- define "jupyterhub.placeholder.default-resources" }}
+requests:
+  cpu: {{ .Values.singleuser.cpu.guarantee }}
+  memory: {{ .Values.singleuser.memory.guarantee }}
+limits:
+  cpu: {{ .Values.singleuser.cpu.limit }}
+  memory: {{ .Values.singleuser.memory.limit }}
+{{- end }}
+
+
+{{- /*
+A custom resource request.
+*/}}
+{{- define "jupyterhub.placeholder.resources" }}
+{{- if .Values.placeholder.resources }}
+{{- .Values.placeholder.resources | toYaml | trimSuffix "\n" | nindent 0 }}
+{{- else }}
+{{- include "jupyterhub.placeholder.default-resources" . | nindent 0 }}
+{{- end }}
+{{- end }}

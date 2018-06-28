@@ -202,7 +202,7 @@ data:
     {{- $_ := merge (dict "heritageLabel" "jupyterhub") . }}
     {{- include "jupyterhub.commonLabels" $_ | nindent 4 }}
   {{- if .Values.scheduler.enabled }}
-  kubespawner.scheduler-name: "jupyterhub-scheduler"
+  kubespawner.scheduler-name: "scheduler"
   {{- end }}
 
 

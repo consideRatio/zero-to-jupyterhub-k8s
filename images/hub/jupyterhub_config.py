@@ -44,21 +44,23 @@ c.KubeSpawner.namespace = os.environ.get('POD_NAMESPACE', 'default')
 c.KubeSpawner.start_timeout = get_config('singleuser.start-timeout')
 
 # Use env var for this, since we want hub to restart when this changes
-c.KubeSpawner.singleuser_image_spec = os.environ['SINGLEUSER_IMAGE']
+c.KubeSpawner.image_spec = os.environ['SINGLEUSER_IMAGE']
 
-c.KubeSpawner.singleuser_image_pull_policy = get_config('singleuser.image-pull-policy')
+c.KubeSpawner.image_pull_policy = get_config('singleuser.image-pull-policy')
 
-c.KubeSpawner.singleuser_extra_labels = get_config('singleuser.extra-labels', {})
+c.KubeSpawner.extra_labels = get_config('singleuser.extra-labels', {})
+c.KubeSpawner.extra_labels["hub.jupyter.org/pod-category"] = "user"
 c.KubeSpawner.storage_extra_labels = get_config('singleuser.storage-extra-labels', {})
+c.KubeSpawner.storage_extra_labels["hub.jupyter.org/storage-category"] = "user"
 
-c.KubeSpawner.singleuser_uid = get_config('singleuser.uid')
-c.KubeSpawner.singleuser_fs_gid = get_config('singleuser.fs-gid')
+c.KubeSpawner.uid = get_config('singleuser.uid')
+c.KubeSpawner.fs_gid = get_config('singleuser.fs-gid')
 
 service_account_name = get_config('singleuser.service-account-name', None)
 if service_account_name:
-    c.KubeSpawner.singleuser_service_account = service_account_name
+    c.KubeSpawner.service_account = service_account_name
 
-c.KubeSpawner.singleuser_node_selector = get_config('singleuser.node-selector')
+c.KubeSpawner.node_selector = get_config('singleuser.node-selector')
 # Configure dynamically provisioning pvc
 storage_type = get_config('singleuser.storage.type')
 if storage_type == 'dynamic':
@@ -107,11 +109,11 @@ c.KubeSpawner.volume_mounts.extend(get_config('singleuser.storage.extra-volume-m
 
 lifecycle_hooks = get_config('singleuser.lifecycle-hooks')
 if lifecycle_hooks:
-    c.KubeSpawner.singleuser_lifecycle_hooks = lifecycle_hooks
+    c.KubeSpawner.lifecycle_hooks = lifecycle_hooks
 
 init_containers = get_config('singleuser.init-containers')
 if init_containers:
-    c.KubeSpawner.singleuser_init_containers.extend(init_containers)
+    c.KubeSpawner.init_containers.extend(init_containers)
 
 # Gives spawned containers access to the API of the hub
 c.KubeSpawner.hub_connect_ip = os.environ['HUB_SERVICE_HOST']
@@ -316,19 +318,25 @@ if not cloud_metadata.get('enabled', False):
         )
     )
 
-    c.KubeSpawner.singleuser_init_containers.append(ip_block_container)
+    c.KubeSpawner.init_containers.append(ip_block_container)
 
 scheduler_name = get_config('kubespawner.scheduler-name', None)
 if scheduler_name:
     c.KubeSpawner.scheduler_name = scheduler_name
 
-c.KubeSpawner.singleuser_extra_pod_config = {
+c.KubeSpawner.extra_pod_config = {
+    'tolerations': [{
+        'key': 'hub.jupyter.org_dedicated',
+        'operator': 'Equal',
+        'value': 'user',
+        'effect': 'NoSchedule'
+    }], 
     'affinity': {
         'nodeAffinity': {
             'preferredDuringSchedulingIgnoredDuringExecution': [{
                 'preference': {
                     'matchExpressions': [{
-                        'key': 'hub.jupyter.org/purpose',
+                        'key': 'hub.jupyter.org/node-purpose',
                         'operator': 'In',
                         'values': ['user']
                     }]
@@ -342,7 +350,7 @@ c.KubeSpawner.singleuser_extra_pod_config = {
 scheduler_strategy = get_config('singleuser.scheduler-strategy', 'spread')
 if scheduler_strategy == 'pack':
     # FIXME: Support setting affinity directly in KubeSpawner
-    c.KubeSpawner.singleuser_extra_pod_config['affinity']['podAffinity'] = {
+    c.KubeSpawner.extra_pod_config['affinity']['podAffinity'] = {
         'preferredDuringSchedulingIgnoredDuringExecution': [{
             'podAffinityTerm': {
                 'labelSelector': {

@@ -38,7 +38,7 @@ hub:
     tag: generated-by-chartpress
   resources:
     requests:
-      cpu: 100m
+      cpu: 50m
       memory: 512Mi
   services: {}
   imagePullPolicy: IfNotPresent
@@ -72,7 +72,7 @@ proxy:
       pullPolicy: IfNotPresent
     resources:
       requests:
-        cpu: 100m
+        cpu: 50m
         memory: 512Mi
   nginx:
     image:
@@ -183,17 +183,16 @@ singleuser:
 
 
 placeholder:
-  fixed:
-    enabled: true
-    replicas: 1
-  perNode:
-    enabled: true
-    replicas: 1
+  enabled: true
+  replicas: 1
 
 
 scheduler:
-  enabled: false
+  enabled: true
   replicas: 1
+  image:
+    name: gcr.io/google_containers/kube-scheduler-amd64
+    tag: v1.11.1-beta.0
 
 
 prePuller:

@@ -15,6 +15,7 @@ spec:
       labels:
         {{- /* Changes here will cause the Deployment to restart the pods. */}}
         {{- include "jupyterhub.matchLabels" . | nindent 8 }}
+        hub.jupyter.org/pod-category: "core"
         hub.jupyter.org/network-access-hub: "true"
         hub.jupyter.org/network-access-singleuser: "true"
         {{- if .Values.proxy.labels }}
@@ -35,7 +36,7 @@ spec:
           preferredDuringSchedulingIgnoredDuringExecution:
             - preference:
                 matchExpressions:
-                  - key: hub.jupyter.org/purpose
+                  - key: hub.jupyter.org/node-purpose
                     operator: In
                     values:
                       - core

@@ -15,6 +15,7 @@ spec:
       labels:
         {{- /* Changes here will cause the Deployment to restart the pods. */}}
         {{- include "jupyterhub.matchLabels" . | nindent 8 }}
+        hub.jupyter.org/pod-category: "core"
     spec:
       {{- if .Values.rbac.enabled }}
       serviceAccountName: pod-culler
