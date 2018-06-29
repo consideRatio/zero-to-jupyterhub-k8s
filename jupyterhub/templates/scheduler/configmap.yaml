@@ -1,8 +1,8 @@
-{{- if .Values.scheduler.enabled -}}
+{{- if .Values.scheduling.jupyterhubScheduler.enabled -}}
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: scheduler
+  name: jupyterhub-scheduler
   namespace: kube-system
   labels:
     {{- include "jupyterhub.labels" . | nindent 4 }}

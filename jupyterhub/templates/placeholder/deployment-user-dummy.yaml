@@ -1,15 +1,16 @@
-{{- if .Values.placeholder.enabled -}}
+{{- if .Values.placeholder.userDummyTesting.enabled -}}
+{{- $_ := merge (dict "componentLabel" "user-dummy") . -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: placeholder
+  name: user-dummy
   labels:
-    {{- include "jupyterhub.labels" . | nindent 4 }}
+    {{- include "jupyterhub.labels" $_ | nindent 4 }}
 spec:
-  replicas: {{ .Values.placeholder.replicas }}
+  replicas: {{ .Values.placeholder.userDummyTesting.replicas }}
   selector:
     matchLabels:
-      {{- include "jupyterhub.matchLabels" . | nindent 6 }}
+      {{- include "jupyterhub.matchLabels" $_ | nindent 6 }}
   updateStrategy:
     type: RollingUpdate
     rollingUpdate:
@@ -19,10 +20,9 @@ spec:
     metadata:
       labels:
         {{- /* Changes here will cause the Deployment to restart the pods. */}}
-        {{- include "jupyterhub.matchLabels" . | nindent 8 }}
+        {{- include "jupyterhub.matchLabels" $_ | nindent 8 }}
         hub.jupyter.org/pod-category: "user"
     spec:
-      priorityClassName: placeholder-priority
       {{- if .Values.scheduling.jupyterhubScheduler.enabled }}
       schedulerName: jupyterhub-scheduler
       {{- end }}

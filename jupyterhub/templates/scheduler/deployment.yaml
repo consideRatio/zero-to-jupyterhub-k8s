@@ -1,13 +1,13 @@
-{{- if .Values.scheduler.enabled -}}
+{{- if .Values.scheduling.jupyterhubScheduler.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: scheduler
+  name: jupyterhub-scheduler
   namespace: kube-system
   labels:
     {{- include "jupyterhub.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.scheduler.replicas }}
+  replicas: {{ .Values.scheduling.jupyterhubScheduler.replicas }}
   selector:
     matchLabels:
       {{- include "jupyterhub.matchLabels" . | nindent 6 }}
@@ -22,7 +22,7 @@ spec:
         checksum/config-map: {{ include (print $.Template.BasePath "/scheduler/configmap.yaml") . | sha256sum }}
     spec:
       {{- if .Values.rbac.enabled }}
-      serviceAccountName: scheduler
+      serviceAccountName: jupyterhub-scheduler
       {{- end }}
       affinity:
         nodeAffinity:
@@ -35,18 +35,13 @@ spec:
                       - core
               weight: 10
       containers:
-        - name: scheduler
+        - name: jupyterhub-scheduler
           image: {{ include "jupyterhub.scheduler.image" . }}
           command:
             - /usr/local/bin/kube-scheduler
-            - --address=0.0.0.0
-            - --scheduler-name=scheduler
-            - --policy-configmap=scheduler
-            - --policy-configmap-namespace=kube-system
-            - --leader-elect=false
-            - --leader-elect-resource-lock=configmaps
-            - --lock-object-name=scheduler
-            - --lock-object-namespace=kube-system
+            - --scheduler-name=jupyterhub-scheduler
+            - --policy-configmap=jupyterhub-scheduler
+            - --lock-object-name=jupyterhub-scheduler
             - --v=4
           livenessProbe:
             httpGet:

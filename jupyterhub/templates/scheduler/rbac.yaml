@@ -1,9 +1,9 @@
-{{- if .Values.scheduler.enabled -}}
+{{- if .Values.scheduling.jupyterhubScheduler.enabled -}}
 {{- if .Values.rbac.enabled }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: scheduler
+  name: jupyterhub-scheduler
   namespace: kube-system
   labels:
     {{- include "jupyterhub.labels" . | nindent 4 }}
@@ -11,51 +11,52 @@ metadata:
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: scheduler-system
-  namespace: kube-system
+  name: jupyterhub-scheduler-base
   labels:
-    {{- $_ := merge (dict "componentSuffix" "-additional") . }}
+    {{- $_ := merge (dict "componentSuffix" "-base") . }}
     {{- include "jupyterhub.labels" $_ | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: scheduler
+    name: jupyterhub-scheduler
     namespace: kube-system
 roleRef:
   kind: ClusterRole
-  name: cluster-admin
+  name: system:kube-scheduler
   apiGroup: rbac.authorization.k8s.io
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: scheduler-additional
-  namespace: kube-system
+  name: jupyterhub-scheduler-complementary
   labels:
-    {{- $_ := merge (dict "componentSuffix" "-additional") . }}
+    {{- $_ := merge (dict "componentSuffix" "-complementary") . }}
     {{- include "jupyterhub.labels" $_ | nindent 4 }}
 rules:
   - apiGroups: [""]
+    resourceNames: ["jupyterhub-scheduler"]
+    resources: ["endpoints"]
+    verbs: ["delete", "get", "patch", "update"]
+  - apiGroups: [""]
     resources: ["configmaps"]
     verbs: ["get"]
-  - apiGroups: ["storage"]
+  - apiGroups: ["storage.k8s.io"]
     resources: ["storageclasses"]
     verbs: ["get", "list", "watch"]
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: scheduler-additional
-  namespace: kube-system
+  name: jupyterhub-scheduler-complementary
   labels:
-    {{- $_ := merge (dict "componentSuffix" "-additional") . }}
+    {{- $_ := merge (dict "componentSuffix" "-complementary") . }}
     {{- include "jupyterhub.labels" $_ | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: scheduler
+    name: jupyterhub-scheduler
     namespace: kube-system
 roleRef:
   kind: ClusterRole
-  name: scheduler-additional
+  name: jupyterhub-scheduler-complementary
   apiGroup: rbac.authorization.k8s.io
 {{- end }}
 {{- end }}
