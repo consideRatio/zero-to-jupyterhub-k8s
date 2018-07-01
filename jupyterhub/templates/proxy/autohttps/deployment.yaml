@@ -30,7 +30,7 @@ spec:
         {{- /* Changes here will cause the Deployment to restart the pods. */}}
         {{- $_ := merge (dict "appLabel" "kube-lego") . }}
         {{- include "jupyterhub.matchLabels" $_ | nindent 8 }}
-        hub.jupyter.org/pod-category: "core"
+        hub.jupyter.org/pod-kind: "core"
         hub.jupyter.org/network-access-proxy-http: "true"
     spec:
       {{- if .Values.rbac.enabled }}
@@ -38,16 +38,10 @@ spec:
       {{- end }}
       nodeSelector: {{ toJson .Values.proxy.nodeSelector }}
       terminationGracePeriodSeconds: 60
+      priorityClassName: jupyterhub-default-priority
       affinity:
-        nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - preference:
-                matchExpressions:
-                  - key: hub.jupyter.org/node-purpose
-                    operator: In
-                    values: 
-                      - core
-              weight: 10
+        {{- $_ := merge (dict "podKind" "core") . }}
+        {{- include "jupyterhub.nodeAffinity" $_ | nindent 8 }}
       containers:
         - name: nginx
           image: "{{ .Values.proxy.nginx.image.name }}:{{ .Values.proxy.nginx.image.tag }}"

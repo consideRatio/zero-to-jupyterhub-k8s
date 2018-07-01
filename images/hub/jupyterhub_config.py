@@ -49,7 +49,7 @@ c.KubeSpawner.image_spec = os.environ['SINGLEUSER_IMAGE']
 c.KubeSpawner.image_pull_policy = get_config('singleuser.image-pull-policy')
 
 c.KubeSpawner.extra_labels = get_config('singleuser.extra-labels', {})
-c.KubeSpawner.extra_labels["hub.jupyter.org/pod-category"] = "user"
+c.KubeSpawner.extra_labels["hub.jupyter.org/pod-kind"] = "user"
 c.KubeSpawner.storage_extra_labels = get_config('singleuser.storage-extra-labels', {})
 c.KubeSpawner.storage_extra_labels["hub.jupyter.org/storage-category"] = "user"
 
@@ -324,47 +324,9 @@ scheduler_name = get_config('kubespawner.scheduler-name', None)
 if scheduler_name:
     c.KubeSpawner.scheduler_name = scheduler_name
 
-c.KubeSpawner.extra_pod_config = {
-    'tolerations': [{
-        'key': 'hub.jupyter.org_dedicated',
-        'operator': 'Equal',
-        'value': 'user',
-        'effect': 'NoSchedule'
-    }], 
-    'affinity': {
-        'nodeAffinity': {
-            'preferredDuringSchedulingIgnoredDuringExecution': [{
-                'preference': {
-                    'matchExpressions': [{
-                        'key': 'hub.jupyter.org/node-purpose',
-                        'operator': 'In',
-                        'values': ['user']
-                    }]
-                },
-                'weight': 10
-            }]
-        }
-    }
-}
-
-scheduler_strategy = get_config('singleuser.scheduler-strategy', 'spread')
-if scheduler_strategy == 'pack':
-    # FIXME: Support setting affinity directly in KubeSpawner
-    c.KubeSpawner.extra_pod_config['affinity']['podAffinity'] = {
-        'preferredDuringSchedulingIgnoredDuringExecution': [{
-            'podAffinityTerm': {
-                'labelSelector': {
-                    'matchExpressions': [{
-                        'key': 'component',
-                        'operator': 'In',
-                        'values': ['singleuser-server']
-                    }]
-                },
-                'topologyKey': 'kubernetes.io/hostname'
-            },
-            'weight': 10
-        }]
-    }
+c.KubeSpawner.extra_pod_config = {}
+c.KubeSpawner.extra_pod_config.update(get_config('scheduling.singleuser-tolerations'))
+c.KubeSpawner.extra_pod_config.update(get_config('scheduling.singleuser-affinity'))
 
 if get_config('debug.enabled', False):
     c.JupyterHub.log_level = 'DEBUG'

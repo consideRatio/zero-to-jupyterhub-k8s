@@ -132,3 +132,118 @@ component: {{ include "jupyterhub.componentLabel" . }}
 {{- define "jupyterhub.podCullerSelector" -}}
 {{ include "jupyterhub.matchLabels" . | replace ": " "=" | replace "\n" "," | quote }}
 {{- end }}
+
+
+{{- /*
+  jupyterhub.scheduling.singleuser-tolerations
+    Refactors the setting of the user pods tolerations field.
+*/}}
+{{- define "jupyterhub.scheduling.singleuser-tolerations" -}}
+tolerations:
+  {{- /* FIXME: '/' https://issuetracker.google.com/issues/77240642 */}}
+  - key: hub.jupyter.org_dedicated
+    operator: Equal
+    value: user
+    effect: NoSchedule
+{{- end }}
+
+
+{{- /*
+  jupyterhub.scheduling.singleuser-affinity
+    Refactors the setting of the user pods affinity field.
+*/}}
+{{- define "jupyterhub.scheduling.singleuser-affinity" -}}
+affinity:
+  {{- $_ := merge (dict "podKind" "user") . }}
+  {{- include "jupyterhub.nodeAffinity" $_  | nindent 2 }}
+  {{- include "jupyterhub.podAffinity" $_ | nindent 2 }}
+{{- end }}
+
+
+
+{{- /*
+  jupyterhub.nodeAffinity
+    Refactors the setting of nodeAffinity fields.
+*/}}
+{{- define "jupyterhub.nodeAffinity" -}}
+{{- $userPods := .Values.scheduling.nodeAffinity.matchNodePurposeWithPodKind.userPods }}
+{{- $corePods := .Values.scheduling.nodeAffinity.matchNodePurposeWithPodKind.corePods }}
+{{- if eq .podKind "core" }}
+{{- include "jupyterhub.nodeAffinityHelper" (merge (dict "setting" $corePods "podKind" "core") .) }}
+{{- else if eq .podKind "user" }}
+{{- include "jupyterhub.nodeAffinityHelper" (merge (dict "setting" $userPods "podKind" "user") .) }}
+{{- end }}
+{{- end }}
+
+{{- define "jupyterhub.nodeAffinityHelper" -}}
+nodeAffinity:
+  {{- if eq .setting "require" }}
+  requiredDuringSchedulingIgnoredDuringExecution:
+    nodeSelectorTerms:
+      - matchExpressions:
+          - key: 'hub.jupyter.org/node-purpose'
+            operator: In
+            values: [{{ .podKind | quote }}]
+  {{- end }}
+  {{- if eq .setting "prefer" }}
+  preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      preference:
+        matchExpressions:
+          - key: 'hub.jupyter.org/node-purpose'
+            operator: In
+            values: [{{ .podKind | quote  }}]
+  {{- end }}
+{{- end }}
+
+
+{{- /*
+  jupyterhub.podAffinity
+    Refactors the setting of podAffinity fields.
+*/}}
+{{- define "jupyterhub.podAffinity" -}}
+podAffinity:
+  {{- if .Values.scheduling.podAffinity.userToRealUserAffinity }}
+  preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+            {{- if .Values.userDummyTesting.enabled }}
+            - key: component
+              operator: In
+              values: ['user-dummy']
+            {{- end }}
+            - key: component
+              operator: In
+              values: ['singleuser-server']
+        topologyKey: 'kubernetes.io/hostname'
+  {{- end }}
+{{- end }}
+
+
+{{- /*
+The default resource request - whatever a singleuser requests.
+*/}}
+{{- define "jupyterhub.default-resources" -}}
+requests:
+  cpu: {{ .Values.singleuser.cpu.guarantee }}
+  memory: {{ .Values.singleuser.memory.guarantee }}
+limits:
+  cpu: {{ .Values.singleuser.cpu.limit }}
+  memory: {{ .Values.singleuser.memory.limit }}
+{{- end }}
+
+
+{{- /*
+A custom resource request.
+*/}}
+{{- define "jupyterhub.resources" -}}
+{{- if and .Values.placeholder.resources (eq .type "placeholder") -}}
+{{ .Values.placeholder.resources | toYaml | trimSuffix "\n" }}
+{{- else if and .Values.userDummyTesting.resources (eq .type "user-dummy") -}}
+{{ .Values.userDummyTesting.resources | toYaml | trimSuffix "\n" }}
+{{- else -}}
+{{ include "jupyterhub.default-resources" . }}
+{{- end }}
+{{- end }}

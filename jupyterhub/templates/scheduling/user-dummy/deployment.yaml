@@ -1,0 +1,45 @@
+{{- /* 
+These user-dummy pods can be used to test cluster autoscaling in a
+controlled fashion.
+
+Example:
+$ echo 'Simulating four users...'
+$ kubectl patch deployment user-dummy --patch '{"spec": {"replicas": 4}}'
+*/}}
+{{- if .Values.userDummyTesting.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-dummy
+  labels:
+    {{- include "jupyterhub.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.userDummyTesting.replicas }}
+  selector:
+    matchLabels:
+      {{- include "jupyterhub.matchLabels" . | nindent 6 }}
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 100%
+      maxSurge: 100%
+  template:
+    metadata:
+      labels:
+        {{- /* Changes here will cause the Deployment to restart the pods. */}}
+        {{- include "jupyterhub.matchLabels" . | nindent 8 }}
+        hub.jupyter.org/pod-kind: "user"
+    spec:
+      {{- if .Values.scheduling.jupyterhubScheduler.enabled }}
+      schedulerName: jupyterhub-scheduler
+      {{- end }}
+      priorityClassName: jupyterhub-default-priority
+      {{- include "jupyterhub.scheduling.singleuser-affinity" . | nindent 6 }}
+      terminationGracePeriodSeconds: 0
+      automountServiceAccountToken: false
+      containers:
+        - name: pause
+          image: {{ .Values.prePuller.pause.image.name }}:{{ .Values.prePuller.pause.image.tag }}
+          resources:
+            {{- $_ := merge (dict "type" "user-dummy") . -}}
+            {{- include "jupyterhub.resources" $_ | nindent 12 }}
+{{- end }}

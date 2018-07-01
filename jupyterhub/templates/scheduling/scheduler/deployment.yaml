@@ -16,7 +16,7 @@ spec:
       labels:
         {{- /* Changes here will cause the Deployment to restart the pods. */}}
         {{- include "jupyterhub.matchLabels" . | nindent 8 }}
-        hub.jupyter.org/pod-category: "core"
+        hub.jupyter.org/pod-kind: "core"
       annotations:
         # This lets us autorestart when the configmap changes!
         checksum/config-map: {{ include (print $.Template.BasePath "/scheduler/configmap.yaml") . | sha256sum }}
@@ -25,15 +25,18 @@ spec:
       serviceAccountName: jupyterhub-scheduler
       {{- end }}
       affinity:
-        nodeAffinity:
+        {{- $_ := merge (dict "podKind" "core") . }}
+        {{- include "jupyterhub.nodeAffinity" $_ | nindent 8 }}
+        podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
-            - preference:
-                matchExpressions:
-                  - key: hub.jupyter.org/node-purpose
-                    operator: In
-                    values:
-                      - core
-              weight: 10
+            - podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: component
+                      operator: In
+                      values: ["scheduler"]
+                topologyKey: kubernetes.io/hostname
+              weight: 100
       containers:
         - name: jupyterhub-scheduler
           image: {{ include "jupyterhub.scheduler.image" . }}

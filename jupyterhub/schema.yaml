@@ -247,6 +247,7 @@ properties:
     required:
       - secretToken
 
+
   auth:
     type: object
     properties:
@@ -271,6 +272,7 @@ properties:
               This can be generated with `openssl rand -hex 32`.
 
               If encryption is unavailable, auth_state cannot be persisted.
+
 
   singleuser:
     type: object
@@ -326,3 +328,161 @@ properties:
               The tag of the image to use.
 
               This is the value after the `:` in your full image name.
+  
+
+    user-dummy:
+      type: object
+      description: |
+        User dummies can help you ensure your cluster autoscaler,
+        jupyterhub-scheduler and pod priority is setup to your liking. User
+        dummies behave like placeholders but they have their pod priority setup
+        like real users and can evict placeholders.
+
+        To test your setup efficiently, you can adjust the amount of user dummies with the following command.
+
+        ```
+        # First let there be for example 3 user dummies
+        kubectl patch deployment user-dummy --patch '{"spec": {"replicas": 3}}'
+
+        # Then perhaps let there be 10 user dummies
+        kubectl patch deployment user-dummy --patch '{"spec": {"replicas": 10}}'
+        ```
+      properties:
+        enabled:
+          type: bool
+        replicas:
+          type: int
+          description: |
+            How many user-dummy pods would you like to have? Note that it makes
+            more sense to have this set at 0 but then adjust it with a kubectl
+            patch command during testing.
+        resources:
+          type: object
+          description: |
+            Unless specified here, the user-dummy pods will request the same
+            resources specified for the real singleuser pods.
+
+
+  placeholder:
+    type: object
+    description: |
+      Placeholders simulate users but will thanks to PodPriority be evicted by
+      the cluster autoscaler if a real user shows up. Thanks to placeholders,
+      you are able to create a headroom for the real users and reduce the risk
+      of a user having to wait for a node to be added. It is highly recommended
+      to use the continuous pre-puller as well along with placeholders, so the
+      images are also available when real users arrive.
+    properties:
+      enabled:
+        type: bool
+      replicas:
+        type: int
+        description: |
+          How many placeholder pods would you like to have?
+      resources:
+        type: object
+        description: |
+          Unless specified here, the placeholder pods will request the same
+          resources specified for the real singleuser pods.
+
+
+  scheduling:
+    type: object
+    description: |
+      Objects for customizing the scheduling of various pods on the nodes and
+      related labels.
+    properties:
+      podPriority:
+        type: object
+        description: |
+          Generally available since kubernetes 1.11, Pod Priority is used to
+          allow real users evict placeholder pods.
+        properties:
+          enabled:
+            type: bool
+            description: |
+              Generally available since kubernetes 1.11, Pod Priority is used to
+              allow real users evict placeholder pods.
+      podAffinity:
+        type: object
+        description: |
+          When a pod is to be scheduled, the scheduled can be made to prefer of
+          require having other pods within the same domain (commonly the same
+          node).
+        properties:
+          userToRealUserAffinity:
+            type: bool
+            description: |
+              Should user pods (placeholder pods and real users) prefer to
+              schedule next to real users? This is recommended for use with
+              cluster autoscalers on clusters with less than hundred nodes. This
+              is not recommended if you use a fixed amount of nodes as the users
+              may be able to utilize the nodes hardware more efficiently if they
+              spread out.
+      nodeAffinity:
+        type: object
+        description: |
+          Where should pods be scheduled? Perhaps on nodes with a certain label
+          is prefered or even required?
+        properties:
+          matchNodePurposeWithPodKind:
+            type: object
+            description: |
+              The "hub.jupyter.org/node-purpose" label and its values ("core" |
+              "user") on nodes can influence where pods are scheduled. This
+              chart creates two kinds of pods, the user pods and the core pods.
+              Should user pods and core pods respectively ignore, prefer or
+              require a matching node purpose label on the node they are to be
+              scheduled on?
+            properties:
+              corePods:
+                type: string
+                enum:
+                  - ignore
+                  - prefer
+                  - require
+                description: |
+                  Decide if core pods "ignore", "prefer" or "require" to schedule on
+                  nodes with the label "hub.jupyter.org/node-purpose=core".
+              userPods:
+                type: string
+                enum:
+                  - ignore
+                  - prefer
+                  - require
+                description: |
+                  Decide if user pods "ignore", "prefer" or "require" to schedule on
+                  nodes with the label "hub.jupyter.org/node-purpose=user".
+      jupyterhubScheduler:
+        type: object
+        description: |
+          The jupyterhub scheduler is making sure that user pods are scheduled
+          tight on nodes, this is useful for autoscaling of user node pools.
+          properties:
+            enabled:
+              type: boolean
+              description: |
+                Enables the jupyterhub scheduler.
+            replicas:
+              type: integer
+              description: |
+                You can have multiple schedulers to share the workload or
+                improve availability on node failure.
+            image:
+              type: object
+              description: |
+                The image containing the kube-scheduler binary.
+                - https://console.cloud.google.com/gcr/images/google-containers/GLOBAL/kube-scheduler-amd64
+              properties:
+                name:
+                  type: string
+                  description: |
+                    The image name containing the kube-scheduler binary.
+                    - https://console.cloud.google.com/gcr/images/google-containers/GLOBAL/kube-scheduler-amd64
+                tag:
+                  type:
+                    - string
+                    - "null"
+                  description: |
+                    The tag will default to the clusters kubernetes version.
+                    - https://console.cloud.google.com/gcr/images/google-containers/GLOBAL/kube-scheduler-amd64

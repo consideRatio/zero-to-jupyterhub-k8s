@@ -12,6 +12,7 @@ data:
   cull.timeout: {{ .Values.cull.timeout | quote }}
   cull.every: {{ .Values.cull.every | quote }}
   cull.concurrency: {{ .Values.cull.concurrency | quote }}
+  cull.max-age: {{ .Values.cull.maxAge | quote }}
   {{- end }}
 
 
@@ -132,6 +133,7 @@ data:
   singleuser.cloud-metadata: |
     {{- .Values.singleuser.cloudMetadata | toYaml | trimSuffix "\n" | nindent 4 }}
   singleuser.start-timeout: {{ .Values.singleuser.startTimeout | quote }}
+  singleuser.image-spec: {{ .Values.singleuser.image.name }}:{{ .Values.singleuser.image.tag }}
   singleuser.image-pull-policy: {{ .Values.singleuser.image.pullPolicy | quote }}
   {{- if .Values.singleuser.cmd }}
   singleuser.cmd: {{ .Values.singleuser.cmd | quote }}
@@ -145,9 +147,6 @@ data:
   singleuser.service-account-name: {{ .Values.singleuser.serviceAccountName | quote }}
   {{- end }}
   singleuser.node-selector: {{ toJson .Values.singleuser.nodeSelector | quote }}
-  {{- if .Values.singleuser.schedulerStrategy }}
-  singleuser.scheduler-strategy: {{ .Values.singleuser.schedulerStrategy | quote }}
-  {{- end }}
   singleuser.storage.type: {{ .Values.singleuser.storage.type | quote }}
   singleuser.storage.home_mount_path: {{ .Values.singleuser.storage.homeMountPath | quote }}
   singleuser.storage.extra-volumes: {{ toJson .Values.singleuser.storage.extraVolumes | quote }}
@@ -195,6 +194,12 @@ data:
     {{ $key | quote }}: {{ $value | quote }}
     {{- end }}
   {{- end }}
+
+  {{- /* Scheduling */}}
+  scheduling.singleuser-tolerations: |
+    {{- include "jupyterhub.scheduling.singleuser-tolerations" . | nindent 4 }}
+  scheduling.singleuser-affinity: |
+    {{- include "jupyterhub.scheduling.singleuser-affinity" . | nindent 4 }}
   
   
   {{- /* KubeSpawner */}}

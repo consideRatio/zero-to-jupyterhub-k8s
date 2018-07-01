@@ -152,7 +152,6 @@ singleuser:
   uid: 1000
   fsGid: 100
   serviceAccountName:
-  schedulerStrategy:
   storage:
     type: dynamic
     extraVolumes: []
@@ -185,15 +184,23 @@ singleuser:
 placeholder:
   enabled: true
   replicas: 1
-  userDummyTesting:
-    enabled: true
-    replicas: 1
+  resources:
+
+
+userDummyTesting:
+  enabled: true
+  replicas: 1
 
 
 scheduling:
-  nodePurposeLabel:
-    userPods: "prefer"
-    corePods: "prefer"
+  podPriority:
+    enabled: true
+  podAffinity:
+    userToRealUserAffinity: true
+  nodeAffinity:
+    matchNodePurposeWithPodKind:
+      userPods: "prefer"
+      corePods: "prefer"
   jupyterhubScheduler:
     enabled: true
     replicas: 1
@@ -204,13 +211,13 @@ scheduling:
 
 prePuller:
   hook:
-    enabled: true
+    enabled: false
     extraEnv: {}
     image:
       name: jupyterhub/k8s-image-awaiter
       tag: generated-by-chartpress
   continuous:
-    enabled: false
+    enabled: true
   extraImages: []
   pause:
     image:
@@ -229,13 +236,9 @@ cull:
   enabled: true
   users: false
   timeout: 3600
-  every: 600
+  every: 30
   concurrency: 10
   maxAge: 0
-  podCuller:
-    image:
-      name: jupyterhub/k8s-pod-culler
-      tag: generated-by-chartpress
 
 
 debug:
