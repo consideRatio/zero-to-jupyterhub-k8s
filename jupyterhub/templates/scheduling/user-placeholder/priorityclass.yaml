@@ -1,9 +1,9 @@
 {{- if .Values.scheduling.podPriority.enabled }}
-{{- if .Values.placeholder.enabled -}}
+{{- if .Values.scheduling.userPlaceholder.enabled -}}
 apiVersion: scheduling.k8s.io/v1alpha1
 kind: PriorityClass
 metadata:
-  name: jupyterhub-placeholder-priority
+  name: jupyterhub-user-placeholder-priority
   labels:
     {{- $_ := merge (dict "componentSuffix" "-priority") . }}
     {{- include "jupyterhub.labels" . | nindent 4 }}

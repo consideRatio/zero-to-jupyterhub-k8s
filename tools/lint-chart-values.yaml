@@ -158,18 +158,15 @@ singleuser:
   defaultUrl:
 
 
-placeholder:
-  enabled: true
-  replicas: 1
-  resources:
-
-
-userDummyTesting:
-  enabled: true
-  replicas: 1
-
-
 scheduling:
+  userPlaceholder:
+    enabled: true
+    replicas: 1
+    resources:
+  userDummy:
+    enabled: true
+    replicas: 1
+    resources:
   podAffinity:
     userToRealUserAffinity: true
   nodeAffinity:

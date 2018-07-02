@@ -13,5 +13,5 @@ metadata:
     helm.sh/hook-weight: "-100"
 value: 10
 globalDefault: false
-description: "A default priority higher than the placeholder priority."
+description: "A default priority higher than user placeholders priority."
 {{- end }}

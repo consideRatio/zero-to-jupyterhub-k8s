@@ -3,7 +3,7 @@ The cluster autoscaler may evict user-dummy but not real user pods, this is
 because user-dummy pods belong to a Deployment controller while the real user
 pods don't. This PDB resolves that.
 */}}
-{{- if .Values.userDummyTesting.enabled -}}
+{{- if .Values.scheduling.userDummy.enabled -}}
 apiVersion: policy/v1beta1
 kind: PodDisruptionBudget
 metadata:

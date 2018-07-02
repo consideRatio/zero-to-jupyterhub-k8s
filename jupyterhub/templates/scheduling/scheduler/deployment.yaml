@@ -19,7 +19,7 @@ spec:
         hub.jupyter.org/pod-kind: "core"
       annotations:
         # This lets us autorestart when the configmap changes!
-        checksum/config-map: {{ include (print $.Template.BasePath "/scheduler/configmap.yaml") . | sha256sum }}
+        checksum/config-map: {{ include (print $.Template.BasePath "/scheduling/scheduler/configmap.yaml") . | sha256sum }}
     spec:
       {{- if .Values.rbac.enabled }}
       serviceAccountName: jupyterhub-scheduler
