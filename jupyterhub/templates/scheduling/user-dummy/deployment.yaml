@@ -29,7 +29,9 @@ spec:
         {{- include "jupyterhub.matchLabels" . | nindent 8 }}
         hub.jupyter.org/pod-kind: "user"
     spec:
+      {{- if .Values.scheduling.podPriority.enabled }}
       priorityClassName: jupyterhub-default-priority
+      {{- end }}
       {{- if .Values.scheduling.jupyterhubScheduler.enabled }}
       schedulerName: jupyterhub-scheduler
       {{- end }}

@@ -30,7 +30,9 @@ spec:
         {{- end }}
     spec:
       nodeSelector: {{ toJson .Values.hub.nodeSelector }}
+      {{- if .Values.scheduling.podPriority.enabled }}
       priorityClassName: jupyterhub-default-priority
+      {{- end }}
       affinity:
         {{- $_ := merge (dict "podKind" "core") . }}
         {{- include "jupyterhub.nodeAffinity" $_ | nindent 8 }}
