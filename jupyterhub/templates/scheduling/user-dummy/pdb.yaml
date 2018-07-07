@@ -4,15 +4,16 @@ because user-dummy pods belong to a Deployment controller while the real user
 pods don't. This PDB resolves that.
 */}}
 {{- if .Values.scheduling.userDummy.enabled -}}
+{{- $_ := merge (dict "componentLabel" "singleuser-server") . -}}
 apiVersion: policy/v1beta1
 kind: PodDisruptionBudget
 metadata:
   name: user-dummy
   labels:
-    {{- include "jupyterhub.labels" . | nindent 4 }}
+    {{- include "jupyterhub.labels" $_ | nindent 4 }}
 spec:
   maxUnavailable: 0
   selector:
     matchLabels:
-      {{- include "jupyterhub.matchLabels" . | nindent 6 }}
+      {{- include "jupyterhub.matchLabels" $_ | nindent 6 }}
 {{- end }}

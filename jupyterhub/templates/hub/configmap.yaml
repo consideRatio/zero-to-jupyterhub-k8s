@@ -195,11 +195,23 @@ data:
     {{- end }}
   {{- end }}
 
-  {{- /* Scheduling */}}
-  scheduling.singleuser-tolerations: |
-    {{- include "jupyterhub.scheduling.singleuser-tolerations" . | nindent 4 }}
-  scheduling.singleuser-affinity: |
-    {{- include "jupyterhub.scheduling.singleuser-affinity" . | nindent 4 }}
+  singleuser.tolerations: |
+    {{- include "jupyterhub.singleuserTolerations" . | nindent 4 }}
+
+  {{- $userPods := .Values.scheduling.nodeAffinity.matchNodePurposeWithPodKind.userPods }}
+  {{- $_ := (merge (dict "podKind" "user" "setting" $userPods) .) }}
+  singleuser.node-affinity-required: |
+    {{- include "jupyterhub.nodeAffinityRequired" $_ | nindent 4 }}
+  singleuser.node-affinity-preferred: |
+    {{- include "jupyterhub.nodeAffinityPreferred" $_ | nindent 4 }}
+  singleuser.pod-affinity-required: |
+    {{- include "jupyterhub.podAffinityRequired" $_ | nindent 4 }}
+  singleuser.pod-affinity-preferred: |
+    {{- include "jupyterhub.podAffinityPreferred" $_ | nindent 4 }}
+  singleuser.pod-anti-affinity-required: |
+    {{- include "jupyterhub.podAntiAffinityRequired" $_ | nindent 4 }}
+  singleuser.pod-anti-affinity-preferred: |
+    {{- include "jupyterhub.podAntiAffinityPreferred" $_ | nindent 4 }}
   
   
   {{- /* KubeSpawner */}}

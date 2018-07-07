@@ -36,8 +36,8 @@ spec:
       {{- if .Values.scheduling.jupyterhubScheduler.enabled }}
       schedulerName: jupyterhub-scheduler
       {{- end }}
-      {{- include "jupyterhub.scheduling.singleuser-tolerations" . | nindent 6 }}
-      {{- include "jupyterhub.scheduling.singleuser-affinity" . | nindent 6 }}
+      {{- include "jupyterhub.singleuserTolerations" . | nindent 6 }}
+      {{- include "jupyterhub.singleuserAffinity" . | nindent 6 }}
       terminationGracePeriodSeconds: 0
       automountServiceAccountToken: false
       containers:

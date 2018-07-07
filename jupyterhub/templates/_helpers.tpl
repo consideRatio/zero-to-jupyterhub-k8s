@@ -135,10 +135,11 @@ component: {{ include "jupyterhub.componentLabel" . }}
 
 
 {{- /*
-  jupyterhub.scheduling.singleuser-tolerations
+  jupyterhub.singleuserTolerations
     Refactors the setting of the user pods tolerations field.
 */}}
-{{- define "jupyterhub.scheduling.singleuser-tolerations" -}}
+{{- define "jupyterhub.singleuserTolerations" -}}
+# TODO: add extraTolerations to this
 tolerations:
   {{- /* FIXME: '/' https://issuetracker.google.com/issues/77240642 */}}
   - key: hub.jupyter.org_dedicated
@@ -149,14 +150,15 @@ tolerations:
 
 
 {{- /*
-  jupyterhub.scheduling.singleuser-affinity
+  jupyterhub.singleuserAffinity
     Refactors the setting of the user pods affinity field.
 */}}
-{{- define "jupyterhub.scheduling.singleuser-affinity" -}}
+{{- define "jupyterhub.singleuserAffinity" -}}
 affinity:
   {{- $_ := merge (dict "podKind" "user") . }}
   {{- include "jupyterhub.nodeAffinity" $_  | nindent 2 }}
   {{- include "jupyterhub.podAffinity" $_ | nindent 2 }}
+  {{- include "jupyterhub.podAntiAffinity" $_ | nindent 2 }}
 {{- end }}
 
 
@@ -166,35 +168,51 @@ affinity:
     Refactors the setting of nodeAffinity fields.
 */}}
 {{- define "jupyterhub.nodeAffinity" -}}
-{{- $userPods := .Values.scheduling.nodeAffinity.matchNodePurposeWithPodKind.userPods }}
-{{- $corePods := .Values.scheduling.nodeAffinity.matchNodePurposeWithPodKind.corePods }}
-{{- if eq .podKind "core" }}
-{{- include "jupyterhub.nodeAffinityHelper" (merge (dict "setting" $corePods "podKind" "core") .) }}
-{{- else if eq .podKind "user" }}
-{{- include "jupyterhub.nodeAffinityHelper" (merge (dict "setting" $userPods "podKind" "user") .) }}
+{{- $userPods := .Values.scheduling.nodeAffinity.matchNodePurposeWithPodKind.userPods -}}
+{{- $corePods := .Values.scheduling.nodeAffinity.matchNodePurposeWithPodKind.corePods -}}
+{{- if eq .podKind "core" -}}
+{{- include "jupyterhub.nodeAffinityHelper" (merge (dict "setting" $corePods) .) }}
+{{- else if eq .podKind "user" -}}
+{{- include "jupyterhub.nodeAffinityHelper" (merge (dict "setting" $userPods) .) }}
 {{- end }}
 {{- end }}
 
 {{- define "jupyterhub.nodeAffinityHelper" -}}
 nodeAffinity:
-  {{- if eq .setting "require" }}
   requiredDuringSchedulingIgnoredDuringExecution:
     nodeSelectorTerms:
-      - matchExpressions:
-          - key: 'hub.jupyter.org/node-purpose'
-            operator: In
-            values: [{{ .podKind | quote }}]
-  {{- end }}
-  {{- if eq .setting "prefer" }}
+      {{- include "jupyterhub.nodeAffinityRequired" . | nindent 6 }}
   preferredDuringSchedulingIgnoredDuringExecution:
-    - weight: 100
-      preference:
-        matchExpressions:
-          - key: 'hub.jupyter.org/node-purpose'
-            operator: In
-            values: [{{ .podKind | quote  }}]
-  {{- end }}
+    {{- include "jupyterhub.nodeAffinityPreferred" . | nindent 4 }}
 {{- end }}
+
+{{- define "jupyterhub.nodeAffinityRequired" -}}
+{{- if eq .setting "require" -}}
+- matchExpressions:
+  - key: 'hub.jupyter.org/node-purpose'
+    operator: In
+    values: [{{ .podKind | quote }}]
+{{- end }}
+{{- if .Values.singleuser.extraNodeAffinity.required -}}
+{{- .Values.singleuser.extraNodeAffinity.required | toYaml | trimSuffix "\n" | nindent 0 }}
+{{- end }}
+{{- end }}
+
+{{- define "jupyterhub.nodeAffinityPreferred" -}}
+{{- if eq .setting "prefer" -}}
+- weight: 100
+  preference:
+    matchExpressions:
+      - key: 'hub.jupyter.org/node-purpose'
+        operator: In
+        values: [{{ .podKind | quote  }}]
+{{- end }}
+{{- if .Values.singleuser.extraNodeAffinity.preferred -}}
+{{- .Values.singleuser.extraNodeAffinity.preferred | toYaml | trimSuffix "\n" | nindent 0 }}
+{{- end }}
+{{- end }}
+
+
 
 
 {{- /*
@@ -203,23 +221,63 @@ nodeAffinity:
 */}}
 {{- define "jupyterhub.podAffinity" -}}
 podAffinity:
-  {{- if .Values.scheduling.podAffinity.userToRealUserAffinity }}
+  requiredDuringSchedulingIgnoredDuringExecution:
+    {{- .Values.singleuser.extraPodAffinity.required | toYaml | trimSuffix "\n" | nindent 4 }}
   preferredDuringSchedulingIgnoredDuringExecution:
-    - weight: 100
-      podAffinityTerm:
-        labelSelector:
-          matchExpressions:
-            {{- if .Values.scheduling.userDummy.enabled }}
-            - key: component
-              operator: In
-              values: ['user-dummy']
-            {{- end }}
-            - key: component
-              operator: In
-              values: ['singleuser-server']
-        topologyKey: 'kubernetes.io/hostname'
-  {{- end }}
+    {{- .Values.singleuser.extraPodAffinity.preferred | toYaml | trimSuffix "\n" | nindent 4 }}
 {{- end }}
+
+{{- define "jupyterhub.podAffinityRequired" -}}
+{{- if .Values.singleuser.extraPodAffinity.required }}
+{{- .Values.singleuser.extraPodAffinity.required | toYaml | trimSuffix "\n" | nindent 0 }}
+{{- end }}
+{{- end }}
+
+{{- define "jupyterhub.podAffinityPreferred" -}}
+{{- if .Values.scheduling.podAffinity.userToRealUserAffinity -}}
+- weight: 100
+  podAffinityTerm:
+    labelSelector:
+      matchExpressions:
+        - key: component
+          operator: In
+          values: ['singleuser-server']
+    topologyKey: 'kubernetes.io/hostname'
+{{- end }}
+{{- if .Values.singleuser.extraPodAffinity.preferred -}}
+{{- .Values.singleuser.extraPodAffinity.preferred | toYaml | trimSuffix "\n" | nindent 0 }}
+{{- end }}
+{{- end }}
+
+
+
+{{- /*
+  jupyterhub.podAntiAffinity
+    Refactors the setting of podAntiAffinity fields.
+*/}}
+{{- define "jupyterhub.podAntiAffinity" -}}
+podAntiAffinity:
+  requiredDuringSchedulingIgnoredDuringExecution:
+    {{- .Values.singleuser.extraPodAntiAffinity.required | toYaml | trimSuffix "\n" | nindent 4 }}
+  preferredDuringSchedulingIgnoredDuringExecution:
+    {{- .Values.singleuser.extraPodAntiAffinity.preferred | toYaml | trimSuffix "\n" | nindent 4 }}
+{{- end }}
+
+{{- define "jupyterhub.podAntiAffinityRequired" -}}
+{{- if .Values.singleuser.extraPodAntiAffinity.required -}}
+{{- .Values.singleuser.extraPodAntiAffinity.required | toYaml | trimSuffix "\n" | nindent 0 }}
+{{- end }}
+{{- end }}
+
+{{- define "jupyterhub.podAntiAffinityPreferred" -}}
+{{- if .Values.singleuser.extraPodAntiAffinity.preferred -}}
+{{- .Values.singleuser.extraPodAntiAffinity.preferred | toYaml | trimSuffix "\n" | nindent 0 }}
+{{- end }}
+{{- end }}
+
+
+
+
 
 
 {{- /*

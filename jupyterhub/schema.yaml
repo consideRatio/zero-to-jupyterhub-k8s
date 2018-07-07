@@ -420,7 +420,7 @@ properties:
         type: object
         description: |
           Where should pods be scheduled? Perhaps on nodes with a certain label
-          is prefered or even required?
+          is preferred or even required?
         properties:
           matchNodePurposeWithPodKind:
             type: object

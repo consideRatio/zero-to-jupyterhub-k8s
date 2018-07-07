@@ -127,6 +127,17 @@ auth:
 
 
 singleuser:
+  nodeSelector: {}
+  extraNodeAffinity:
+    preferred: []
+    required: []
+  extraPodAffinity:
+    preferred: []
+    required: []
+  extraPodAntiAffinity:
+    preferred: []
+    required: []
+  extraTolerations: []
   networkTools:
     image:
       name: jupyterhub/k8s-network-tools
@@ -148,7 +159,6 @@ singleuser:
   extraEnv: {}
   lifecycleHooks:
   initContainers:
-  nodeSelector: {}
   uid: 1000
   fsGid: 100
   serviceAccountName:
