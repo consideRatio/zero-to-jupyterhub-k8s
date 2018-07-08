@@ -2,8 +2,7 @@
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: jupyterhub-scheduler
-  namespace: kube-system
+  name: user-scheduler
   labels:
     {{- include "jupyterhub.labels" . | nindent 4 }}
     {{- /* NOT FOUND
@@ -40,7 +39,7 @@ data:
         { "name": "NodeAffinityPriority",         "weight": 100 },
         { "name": "NodePreferAvoidPodsPriority",  "weight": 1000 }
       ],
-      "hardPodAffinitySymmetricWeight" : 0,
+      "hardPodAffinitySymmetricWeight" : 10,
       "alwaysCheckAllPredicates" : true
     }
 {{- end }}

@@ -328,7 +328,7 @@ properties:
               The tag of the image to use.
 
               This is the value after the `:` in your full image name.
-  
+
 
   scheduling:
     type: object
@@ -345,6 +345,12 @@ properties:
           reduce the risk of a user having to wait for a node to be added. It is
           highly recommended to use the continuous pre-puller as well along with
           placeholders, so the images are also available when real users arrive.
+
+          To test your setup efficiently, you can adjust the amount of user
+          placeholders with the following command.
+
+          # First let there be for example 3 user placeholders
+          kubectl patch deployment user-placeholder --patch '{"spec": {"replicas": 3}}'
         properties:
           enabled:
             type: bool
@@ -361,20 +367,18 @@ properties:
         type: object
         description: |
           User dummies can help you ensure your cluster autoscaler,
-          jupyterhub-scheduler and pod priority is setup to your liking. User
+          user-scheduler and pod priority is setup to your liking. User
           dummies behave like placeholders but they have their pod priority
           setup like real users and can evict placeholders.
 
           To test your setup efficiently, you can adjust the amount of user
           dummies with the following command.
 
-          ```
           # First let there be for example 3 user dummies
           kubectl patch deployment user-dummy --patch '{"spec": {"replicas": 3}}'
 
           # Then perhaps let there be 10 user dummies
           kubectl patch deployment user-dummy --patch '{"spec": {"replicas": 10}}'
-          ```
         properties:
           enabled:
             type: bool
@@ -400,39 +404,19 @@ properties:
             description: |
               Generally available since kubernetes 1.11, Pod Priority is used to
               allow real users evict placeholder pods.
-      podAffinity:
+      corePods:
         type: object
         description: |
-          When a pod is to be scheduled, the scheduled can be made to prefer of
-          require having other pods within the same domain (commonly the same
-          node).
+          These settings influence the core pods like the hub, proxy and
+          scheduler pods.
         properties:
-          userToRealUserAffinity:
-            type: bool
-            description: |
-              Should user pods (placeholder pods and real users) prefer to
-              schedule next to real users? This is recommended for use with
-              cluster autoscalers on clusters with less than hundred nodes. This
-              is not recommended if you use a fixed amount of nodes as the users
-              may be able to utilize the nodes hardware more efficiently if they
-              spread out.
-      nodeAffinity:
-        type: object
-        description: |
-          Where should pods be scheduled? Perhaps on nodes with a certain label
-          is preferred or even required?
-        properties:
-          matchNodePurposeWithPodKind:
+          nodeAffinity:
             type: object
             description: |
-              The "hub.jupyter.org/node-purpose" label and its values ("core" |
-              "user") on nodes can influence where pods are scheduled. This
-              chart creates two kinds of pods, the user pods and the core pods.
-              Should user pods and core pods respectively ignore, prefer or
-              require a matching node purpose label on the node they are to be
-              scheduled on?
+              Where should pods be scheduled? Perhaps on nodes with a certain label
+              is preferred or even required?
             properties:
-              corePods:
+              matchNodePurpose:
                 type: string
                 enum:
                   - ignore
@@ -442,16 +426,44 @@ properties:
                   Decide if core pods "ignore", "prefer" or "require" to
                   schedule on nodes with the label
                   "hub.jupyter.org/node-purpose=core".
-              userPods:
+      userPods:
+        type: object
+        description: |
+          These settings influence the user pods like the user-placeholder,
+          user-dummy and actual user pods named like jupyter-someusername.
+        properties:
+          nodeAffinity:
+            type: object
+            description: |
+              Where should pods be scheduled? Perhaps on nodes with a certain label
+              is preferred or even required?
+            properties:
+              matchNodePurpose:
                 type: string
                 enum:
                   - ignore
                   - prefer
                   - require
                 description: |
-                  Decide if user pods "ignore", "prefer" or "require" to
+                  Decide if core pods "ignore", "prefer" or "require" to
                   schedule on nodes with the label
                   "hub.jupyter.org/node-purpose=user".
+          podAffinity:
+            type: object
+            description: |
+              When a pod is to be scheduled, the scheduled can be made to prefer of
+              require having other pods within the same domain (commonly the same
+              node).
+            properties:
+              userToRealUserAffinity:
+                type: bool
+                description: |
+                  Should user pods (placeholder pods and real users) prefer to
+                  schedule next to real users? This is recommended for use with
+                  cluster autoscalers on clusters with less than hundred nodes. This
+                  is not recommended if you use a fixed amount of nodes as the users
+                  may be able to utilize the nodes hardware more efficiently if they
+                  spread out.
       jupyterhubScheduler:
         type: object
         description: |

@@ -3,22 +3,21 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: jupyterhub-scheduler
-  namespace: kube-system
+  name: user-scheduler
   labels:
     {{- include "jupyterhub.labels" . | nindent 4 }}
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: jupyterhub-scheduler-base
+  name: user-scheduler-base
   labels:
     {{- $_ := merge (dict "componentSuffix" "-base") . }}
     {{- include "jupyterhub.labels" $_ | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: jupyterhub-scheduler
-    namespace: kube-system
+    name: user-scheduler
+    namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
   name: system:kube-scheduler
@@ -27,18 +26,17 @@ roleRef:
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: jupyterhub-scheduler-complementary
+  name: user-scheduler-complementary
   labels:
     {{- $_ := merge (dict "componentSuffix" "-complementary") . }}
     {{- include "jupyterhub.labels" $_ | nindent 4 }}
 rules:
+  # Support leader elections
   - apiGroups: [""]
-    resourceNames: ["jupyterhub-scheduler"]
-    resources: ["endpoints"]
-    verbs: ["delete", "get", "patch", "update"]
-  - apiGroups: [""]
+    resourceNames: ["user-scheduler"]
     resources: ["configmaps"]
-    verbs: ["get"]
+    verbs: ["get", "update"]
+  # Workaround for missing permission in system:kube-scheduler as of k8s 1.10.4
   - apiGroups: ["storage.k8s.io"]
     resources: ["storageclasses"]
     verbs: ["get", "list", "watch"]
@@ -46,17 +44,17 @@ rules:
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: jupyterhub-scheduler-complementary
+  name: user-scheduler-complementary
   labels:
     {{- $_ := merge (dict "componentSuffix" "-complementary") . }}
     {{- include "jupyterhub.labels" $_ | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: jupyterhub-scheduler
-    namespace: kube-system
+    name: user-scheduler
+    namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
-  name: jupyterhub-scheduler-complementary
+  name: user-scheduler-complementary
   apiGroup: rbac.authorization.k8s.io
 {{- end }}
 {{- end }}

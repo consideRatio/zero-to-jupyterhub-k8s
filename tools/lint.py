@@ -21,6 +21,11 @@ def lint(config, values, kubernetes_version):
 
     output = 'lint-output'
 
+    print("### Clearing output directory")
+    subprocess.check_call([
+        'rm', '-rf', output + '/*',
+    ])
+
     print("### Linting started")
     print("### 1/4 - helm lint")
     subprocess.check_call([

@@ -128,16 +128,16 @@ auth:
 
 singleuser:
   nodeSelector: {}
-  extraNodeAffinity:
-    preferred: []
-    required: []
-  extraPodAffinity:
-    preferred: []
-    required: []
-  extraPodAntiAffinity:
-    preferred: []
-    required: []
   extraTolerations: []
+  extraNodeAffinity:
+    required: []
+    preferred: []
+  extraPodAffinity:
+    required: []
+    preferred: []
+  extraPodAntiAffinity:
+    required: []
+    preferred: []
   networkTools:
     image:
       name: jupyterhub/k8s-network-tools
@@ -194,19 +194,21 @@ singleuser:
 scheduling:
   userPlaceholder:
     enabled: true
-    replicas: 1
+    replicas: 0
     resources:
   userDummy:
     enabled: true
-    replicas: 1
+    replicas: 0
   podPriority:
-    enabled: false
-  podAffinity:
-    userToRealUserAffinity: true
-  nodeAffinity:
-    matchNodePurposeWithPodKind:
-      userPods: "prefer"
-      corePods: "prefer"
+    enabled: true
+  corePods:
+    nodeAffinity:
+      matchNodePurpose: "prefer"
+  userPods:
+    nodeAffinity:
+      matchNodePurpose: "prefer"
+    podAffinity:
+      userToRealUserAffinity: false
   jupyterhubScheduler:
     enabled: true
     replicas: 1

@@ -195,31 +195,43 @@ data:
     {{- end }}
   {{- end }}
 
-  singleuser.tolerations: |
-    {{- include "jupyterhub.singleuserTolerations" . | nindent 4 }}
-
-  {{- $userPods := .Values.scheduling.nodeAffinity.matchNodePurposeWithPodKind.userPods }}
-  {{- $_ := (merge (dict "podKind" "user" "setting" $userPods) .) }}
+  {{- $_ := merge (dict "podKind" "user") . }}
+  {{- include "jupyterhub.prepareScope" $_ }}
+  {{- if $_.hasTolerations }}
+  singleuser.tolerations-list: |
+    {{- $_.tolerationsList | nindent 4 }}
+  {{- end }}
+  {{- if $_.nodeAffinityRequired }}
   singleuser.node-affinity-required: |
-    {{- include "jupyterhub.nodeAffinityRequired" $_ | nindent 4 }}
+    {{- $_.nodeAffinityRequired | nindent 4 }}
+  {{- end }}
+  {{- if $_.nodeAffinityPreferred }}
   singleuser.node-affinity-preferred: |
-    {{- include "jupyterhub.nodeAffinityPreferred" $_ | nindent 4 }}
+    {{- $_.nodeAffinityPreferred | nindent 4 }}
+  {{- end }}
+  {{- if $_.podAffinityRequired }}
   singleuser.pod-affinity-required: |
-    {{- include "jupyterhub.podAffinityRequired" $_ | nindent 4 }}
+    {{- $_.podAffinityRequired | nindent 4 }}
+  {{- end }}
+  {{- if $_.podAffinityPreferred }}
   singleuser.pod-affinity-preferred: |
-    {{- include "jupyterhub.podAffinityPreferred" $_ | nindent 4 }}
+    {{- $_.podAffinityPreferred | nindent 4 }}
+  {{- end }}
+  {{- if $_.podAntiAffinityRequired }}
   singleuser.pod-anti-affinity-required: |
-    {{- include "jupyterhub.podAntiAffinityRequired" $_ | nindent 4 }}
+    {{- $_.podAntiAffinityRequired | nindent 4 }}
+  {{- end }}
+  {{- if $_.podAntiAffinityPreferred }}
   singleuser.pod-anti-affinity-preferred: |
-    {{- include "jupyterhub.podAntiAffinityPreferred" $_ | nindent 4 }}
-  
+    {{- $_.podAntiAffinityPreferred | nindent 4 }}
+  {{- end }}
   
   {{- /* KubeSpawner */}}
   kubespawner.common-labels: |
     {{- $_ := merge (dict "heritageLabel" "jupyterhub") . }}
     {{- include "jupyterhub.commonLabels" $_ | nindent 4 }}
   {{- if .Values.scheduling.jupyterhubScheduler.enabled }}
-  kubespawner.scheduler-name: "jupyterhub-scheduler"
+  kubespawner.scheduler-name: "user-scheduler"
   {{- end }}
 
 

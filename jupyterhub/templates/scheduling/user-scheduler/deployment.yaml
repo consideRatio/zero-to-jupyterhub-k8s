@@ -2,8 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: jupyterhub-scheduler
-  namespace: kube-system
+  name: user-scheduler
   labels:
     {{- include "jupyterhub.labels" . | nindent 4 }}
 spec:
@@ -19,33 +18,31 @@ spec:
         hub.jupyter.org/pod-kind: "core"
       annotations:
         # This lets us autorestart when the configmap changes!
-        checksum/config-map: {{ include (print $.Template.BasePath "/scheduling/scheduler/configmap.yaml") . | sha256sum }}
+        checksum/config-map: {{ include (print $.Template.BasePath "/scheduling/user-scheduler/configmap.yaml") . | sha256sum }}
     spec:
       {{- if .Values.rbac.enabled }}
-      serviceAccountName: jupyterhub-scheduler
+      serviceAccountName: user-scheduler
       {{- end }}
-      affinity:
-        {{- $_ := merge (dict "podKind" "core") . }}
-        {{- include "jupyterhub.nodeAffinity" $_ | nindent 8 }}
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - podAffinityTerm:
-                labelSelector:
-                  matchExpressions:
-                    - key: component
-                      operator: In
-                      values: ["scheduler"]
-                topologyKey: kubernetes.io/hostname
-              weight: 100
+      {{- $_ := merge (dict "podKind" "core") . }}
+      {{- $dummy := include "jupyterhub.prepareScope" $_ }}
+      {{- if $_.hasTolerations }}
+      {{- include "jupyterhub.tolerations" $_ | nindent 6 }}
+      {{- end }}
+      {{- if $_.hasAffinity }}
+      {{- include "jupyterhub.affinity" $_ | nindent 6 }}
+      {{- end }}
       containers:
-        - name: jupyterhub-scheduler
+        - name: user-scheduler
           image: {{ include "jupyterhub.scheduler.image" . }}
           command:
             - /usr/local/bin/kube-scheduler
-            - --scheduler-name=jupyterhub-scheduler
-            - --policy-configmap=jupyterhub-scheduler
-            - --lock-object-name=jupyterhub-scheduler
-            - --v=4
+            - --scheduler-name=user-scheduler
+            - --policy-configmap=user-scheduler
+            - --policy-configmap-namespace={{ .Release.Namespace }}
+            - --lock-object-name=user-scheduler
+            - --lock-object-namespace={{ .Release.Namespace }}
+            - --leader-elect-resource-lock=configmaps
+            - --v=100
           livenessProbe:
             httpGet:
               path: /healthz

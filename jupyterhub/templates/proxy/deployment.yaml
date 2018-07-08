@@ -34,9 +34,14 @@ spec:
       {{- if .Values.scheduling.podPriority.enabled }}
       priorityClassName: jupyterhub-default-priority
       {{- end }}
-      affinity:
-        {{- $_ := merge (dict "podKind" "core") . }}
-        {{- include "jupyterhub.nodeAffinity" $_ | nindent 8 }}
+      {{- $_ := merge (dict "podKind" "core") . }}
+      {{- $dummy := include "jupyterhub.prepareScope" $_ }}
+      {{- if $_.hasTolerations }}
+      {{- include "jupyterhub.tolerations" $_ | nindent 6 }}
+      {{- end }}
+      {{- if $_.hasAffinity }}
+      {{- include "jupyterhub.affinity" $_ | nindent 6 }}
+      {{- end }}
       {{- if $manualHTTPS }}
       volumes:
         - name: tls-secret
