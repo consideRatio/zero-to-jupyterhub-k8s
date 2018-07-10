@@ -230,6 +230,10 @@ scheduling:
   userPods:
     nodeAffinity:
       matchNodePurpose: "prefer"
+    podAffinity:
+      preferScheduleNextToRealUsers: true
+
+
 prePuller:
   hook:
     enabled: true
