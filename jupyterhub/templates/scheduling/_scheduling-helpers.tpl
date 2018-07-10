@@ -97,7 +97,7 @@ tolerations:
 {{- end }}
 
 {{- define "jupyterhub.podAffinityPreferred" -}}
-{{- if .Values.scheduling.userPods.podAffinity.userToRealUserAffinity -}}
+{{- if .Values.scheduling.userPods.podAffinity.preferScheduleNextToRealUsers -}}
 - weight: 100
   podAffinityTerm:
     labelSelector:

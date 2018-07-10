@@ -230,7 +230,7 @@ data:
   kubespawner.common-labels: |
     {{- $_ := merge (dict "heritageLabel" "jupyterhub") . }}
     {{- include "jupyterhub.commonLabels" $_ | nindent 4 }}
-  {{- if .Values.scheduling.jupyterhubScheduler.enabled }}
+  {{- if .Values.scheduling.userScheduler.enabled }}
   kubespawner.scheduler-name: "user-scheduler"
   {{- end }}
 

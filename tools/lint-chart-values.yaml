@@ -127,7 +127,6 @@ singleuser:
   uid: 1000
   fsGid: 100
   serviceAccountName:
-  schedulerStrategy:
   storage:
     type: dynamic
     extraVolumes: []
@@ -159,6 +158,14 @@ singleuser:
 
 
 scheduling:
+  userScheduler:
+    enabled: true
+    replicas: 1
+    image:
+      name: gcr.io/google_containers/kube-scheduler-amd64
+      tag: v1.11.1-beta.0
+  podPriority:
+    enabled: true
   userPlaceholder:
     enabled: true
     replicas: 1
@@ -166,19 +173,14 @@ scheduling:
   userDummy:
     enabled: true
     replicas: 1
-    resources:
-  podAffinity:
-    userToRealUserAffinity: true
-  nodeAffinity:
-    matchNodePurposeWithPodKind:
-      userPods: "prefer"
-      corePods: "prefer"
-  jupyterhubScheduler:
-    enabled: true
-    replicas: 1
-    image:
-      name: gcr.io/google_containers/kube-scheduler-amd64
-      tag: v1.11.1-beta.0
+  corePods:
+    nodeAffinity:
+      matchNodePurpose: "prefer"
+  userPods:
+    nodeAffinity:
+      matchNodePurpose: "prefer"
+    podAffinity:
+      preferScheduleNextToRealUsers: true
 
 
 prePuller:

@@ -33,7 +33,7 @@ spec:
       {{- if .Values.scheduling.podPriority.enabled }}
       priorityClassName: jupyterhub-default-priority
       {{- end }}
-      {{- if .Values.scheduling.jupyterhubScheduler.enabled }}
+      {{- if .Values.scheduling.userScheduler.enabled }}
       schedulerName: user-scheduler
       {{- end }}
       {{- $_ := merge (dict "podKind" "user") . }}

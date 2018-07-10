@@ -63,7 +63,7 @@ c.KubeSpawner.extra_labels.update({
 })
 c.KubeSpawner.storage_extra_labels = get_config('singleuser.storage-extra-labels', {})
 c.KubeSpawner.storage_extra_labels.update({
-    "hub.jupyter.org/storage-category": "user"
+    "hub.jupyter.org/storage-kind": "user"
 })
 
 c.KubeSpawner.start_timeout = get_config('singleuser.start-timeout')

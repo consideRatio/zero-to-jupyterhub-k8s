@@ -336,6 +336,50 @@ properties:
       Objects for customizing the scheduling of various pods on the nodes and
       related labels.
     properties:
+      userScheduler:
+        type: object
+        description: |
+        The user scheduler is making sure that user pods are scheduled
+        tight on nodes, this is useful for autoscaling of user node pools.
+        properties:
+          enabled:
+            type: boolean
+            description: |
+            Enables the user scheduler.
+            replicas:
+              type: integer
+              description: |
+              You can have multiple schedulers to share the workload or
+              improve availability on node failure.
+              image:
+                type: object
+                description: |
+                The image containing the kube-scheduler binary.
+                - https://console.cloud.google.com/gcr/images/google-containers/GLOBAL/kube-scheduler-amd64
+                properties:
+                  name:
+                    type: string
+                    description: |
+                    The image name containing the kube-scheduler binary.
+                    - https://console.cloud.google.com/gcr/images/google-containers/GLOBAL/kube-scheduler-amd64
+                    tag:
+                      type:
+                        - string
+                        - "null"
+                        description: |
+                        The tag will default to the clusters kubernetes version.
+                        - https://console.cloud.google.com/gcr/images/google-containers/GLOBAL/kube-scheduler-amd64
+      podPriority:
+        type: object
+        description: |
+        Generally available since kubernetes 1.11, Pod Priority is used to
+        allow real users evict placeholder pods.
+        properties:
+          enabled:
+            type: bool
+            description: |
+            Generally available since kubernetes 1.11, Pod Priority is used to
+            allow real users evict placeholder pods.
       userPlaceholder:
         type: object
         description: |
@@ -393,17 +437,6 @@ properties:
             description: |
               Unless specified here, the user-dummy pods will request the same
               resources specified for the real singleuser pods.
-      podPriority:
-        type: object
-        description: |
-          Generally available since kubernetes 1.11, Pod Priority is used to
-          allow real users evict placeholder pods.
-        properties:
-          enabled:
-            type: bool
-            description: |
-              Generally available since kubernetes 1.11, Pod Priority is used to
-              allow real users evict placeholder pods.
       corePods:
         type: object
         description: |
@@ -413,8 +446,8 @@ properties:
           nodeAffinity:
             type: object
             description: |
-              Where should pods be scheduled? Perhaps on nodes with a certain label
-              is preferred or even required?
+              Where should pods be scheduled? Perhaps on nodes with a certain
+              label is preferred or even required?
             properties:
               matchNodePurpose:
                 type: string
@@ -435,8 +468,8 @@ properties:
           nodeAffinity:
             type: object
             description: |
-              Where should pods be scheduled? Perhaps on nodes with a certain label
-              is preferred or even required?
+              Where should pods be scheduled? Perhaps on nodes with a certain
+              label is preferred or even required?
             properties:
               matchNodePurpose:
                 type: string
@@ -451,49 +484,20 @@ properties:
           podAffinity:
             type: object
             description: |
-              When a pod is to be scheduled, the scheduled can be made to prefer of
-              require having other pods within the same domain (commonly the same
+              When a pod is to be scheduled, the scheduled can be made to prefer
+              of require having other pods within the same domain (commonly the
+              same
               node).
             properties:
-              userToRealUserAffinity:
+              preferScheduleNextToRealUsers:
                 type: bool
                 description: |
-                  Should user pods (placeholder pods and real users) prefer to
-                  schedule next to real users? This is recommended for use with
-                  cluster autoscalers on clusters with less than hundred nodes. This
-                  is not recommended if you use a fixed amount of nodes as the users
-                  may be able to utilize the nodes hardware more efficiently if they
-                  spread out.
-      jupyterhubScheduler:
-        type: object
-        description: |
-          The jupyterhub scheduler is making sure that user pods are scheduled
-          tight on nodes, this is useful for autoscaling of user node pools.
-          properties:
-            enabled:
-              type: boolean
-              description: |
-                Enables the jupyterhub scheduler.
-            replicas:
-              type: integer
-              description: |
-                You can have multiple schedulers to share the workload or
-                improve availability on node failure.
-            image:
-              type: object
-              description: |
-                The image containing the kube-scheduler binary.
-                - https://console.cloud.google.com/gcr/images/google-containers/GLOBAL/kube-scheduler-amd64
-              properties:
-                name:
-                  type: string
-                  description: |
-                    The image name containing the kube-scheduler binary.
-                    - https://console.cloud.google.com/gcr/images/google-containers/GLOBAL/kube-scheduler-amd64
-                tag:
-                  type:
-                    - string
-                    - "null"
-                  description: |
-                    The tag will default to the clusters kubernetes version.
-                    - https://console.cloud.google.com/gcr/images/google-containers/GLOBAL/kube-scheduler-amd64
+                  Consider two nodes, one with two user-placeholder pods and one
+                  with two actual users. With this affinity set, the pod will
+                  schedule next to the real users which is what you would want
+                  in order to accomplish efficient cluster autoscaling.
+
+                  NOTE: This is recommended for clusters with less than 100
+                  nodes, but since pod affinities are computationally expensive
+                  and cause the scheduler to leave new pods in Pending state for
+                  seconds upwards if the cluster grows large.
