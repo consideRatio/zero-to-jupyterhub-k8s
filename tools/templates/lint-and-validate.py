@@ -1,19 +1,10 @@
 #!/usr/bin/env python3
 """
-Lints and validates the chart's template files and their rendered output without
-any cluster interaction. For this script to function, you must install yamllint
-and kubeval.
+Lints the chart's yaml files without any cluster interaction. For this script to
+function, you must install yamllint and kubeval.
 
 - https://github.com/adrienverge/yamllint
-
-pip install yamllint
-
 - https://github.com/garethr/kubeval
-
-LATEST=curl --silent "https://api.github.com/repos/garethr/kubeval/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'
-wget https://github.com/garethr/kubeval/releases/download/$LATEST/kubeval-linux-amd64.tar.gz
-tar xf kubeval-darwin-amd64.tar.gz
-mv kubeval /usr/local/bin
 """
 
 
@@ -25,7 +16,7 @@ import subprocess
 
 os.chdir(os.path.dirname(sys.argv[0]))
 
-def lint(yamllint_config, values, kubernetes_version, output_dir, debug):
+def lint(yamllint_config, chart_values, kubernetes_version, output_dir):
     """Calls `helm lint`, `helm template`, `yamllint` and `kubeval`."""
 
     print("### Clearing output directory")
@@ -38,24 +29,18 @@ def lint(yamllint_config, values, kubernetes_version, output_dir, debug):
 
     print("### Linting started")
     print("### 1/4 - helm lint")
-    helm_lint_cmd = [
+    subprocess.check_call([
         'helm', 'lint', '../../jupyterhub',
-        '--values', values,
-    ]
-    if debug:
-        helm_lint_cmd.append('--debug')
-    subprocess.check_call(helm_lint_cmd)
+        '--values', chart_values,
+    ])
 
     print("### 2/4 - helm template")
-    helm_template_cmd = [
+    subprocess.check_call([
         'helm', 'template', '../../jupyterhub',
-        '--values', values,
+        '--values', chart_values, 
         '--output-dir', output_dir
-    ]
-    if debug:
-        helm_template_cmd.append('--debug')
-    subprocess.check_call(helm_template_cmd)
-
+    ])
+    
     print("### 3/4 - yamllint")
     subprocess.check_call([
         'yamllint', '-c', yamllint_config, output_dir
@@ -76,12 +61,10 @@ def lint(yamllint_config, values, kubernetes_version, output_dir, debug):
 
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser()
-    argparser.add_argument('--debug', action='store_true', help='Run helm lint and helm template with the --debug flag')
-    argparser.add_argument('--values', default='lint-and-validate-values.yaml', help='Specify Helm values in a YAML file (can specify multiple)')
-    argparser.add_argument('--kubernetes-version', default='1.11.0', help='Version of Kubernetes to validate against')
-    argparser.add_argument('--output-dir', default='rendered-templates', help='Output directory for the rendered templates. Warning: content in this will be wiped.')
-    argparser.add_argument('--yamllint-config', default='yamllint-config.yaml', help='Specify a yamllint config')
-
+    argparser.add_argument('--yamllint-config', default='yamllint-config.yaml', help='Specify the yamllint config')
+    argparser.add_argument('--chart-values', default='chart-values.yaml', help='Specify additional chart value files')
+    argparser.add_argument('--kubernetes-version', default='1.10.5', help='Validate against this Kubernetes version')
+    argparser.add_argument('--output-dir', default='rendered-templates', help='Specify an output directory for the rendered templates')
     args = argparser.parse_args()
-
-    lint(args.yamllint_config, args.values, args.kubernetes_version, args.output_dir, args.debug)
+    
+    lint(args.yamllint_config, args.chart_values, args.kubernetes_version, args.output_dir)
