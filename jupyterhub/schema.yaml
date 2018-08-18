@@ -23,7 +23,7 @@ properties:
           Changing this value will all user logins to be invalidated. If this secret leaks,
           *immediately* change it to something else, or user data can be compromised
           
-          ```
+          ```sh
           # to generate a value, run
           openssl rand -hex 32
           ```
@@ -153,15 +153,21 @@ properties:
                 description: |
                   Annotations to apply to the PVC containing the sqlite database.
 
-                  TODO: Link to pvc annotations
+                  See [the Kubernetes
+                  documentation](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/)
+                  for more details about annotations.
               selector:
                 type: object
                 description: |
-                  Selectors to set for the PVC containing the sqlite database.
+                  Label selectors to set for the PVC containing the sqlite database.
 
-                  Useful when you are using a static PVC.
+                  Useful when you are using a specific PV, and want to bind to
+                  that and only that.
 
-                  TODO: Link to pvc selector docs.
+                  See [the Kubernetes
+                  documentation](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims)
+                  for more details about using a label selector for what PV to
+                  bind to.
               storage:
                 type: string
                 description: |
@@ -211,7 +217,7 @@ properties:
           [| operator](http://www.yaml.org/spec/1.2/spec.html#id2795688).
 
           For example:
-            ```
+            ```yaml
             hub:
               extraConfig: |
                 c.JupyterHub.something = 'something'
@@ -252,7 +258,7 @@ properties:
           A 32-byte cryptographically secure randomly generated string used to secure communications
           between the hub and the configurable-http-proxy.
 
-          ```
+          ```sh
           # to generate a value, run
           openssl rand -hex 32
           ```
@@ -285,7 +291,7 @@ properties:
               It must contain one (or more, separated by ;) 32-byte encryption keys. These can be either base64 or hex-encoded.
               The JUPYTERHUB_CRYPT_KEY environment variable for the hub pod is set using this entry.
 
-              ```
+              ```sh
               # to generate a value, run
               openssl rand -hex 32
               ```
@@ -460,7 +466,7 @@ properties:
 
           To test your setup efficiently, you can adjust the amount of user
           placeholders with the following command:
-          ```
+          ```sh
           # Configure to have 3 user placeholders
           kubectl scale sts/user-placeholder --replicas=3
           ```
@@ -487,7 +493,7 @@ properties:
           To test your setup efficiently, you can adjust the amount of user
           dummies with the following command.
 
-          ```
+          ```sh
           # Configure to have 3 user dummies
           kubectl scale sts/user-dummy --replicas=3
           ```
