@@ -229,6 +229,23 @@ scheduling:
     image:
       name: gcr.io/google_containers/kube-scheduler-amd64
       tag: v1.11.2
+  podPriority:
+    enabled: true
+  userPlaceholder:
+    enabled: true
+    replicas: 1
+    resources:
+  userDummy:
+    enabled: true
+    replicas: 1
+  corePods:
+    nodeAffinity:
+      matchNodePurpose: "require"
+  userPods:
+    nodeAffinity:
+      matchNodePurpose: "require"
+    podAffinity:
+      preferScheduleNextToRealUsers: true
 
 
 prePuller:
