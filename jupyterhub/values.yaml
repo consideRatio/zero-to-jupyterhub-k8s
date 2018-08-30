@@ -140,6 +140,17 @@ auth:
 
 
 singleuser:
+  nodeSelector: {}
+  extraTolerations: []
+  extraNodeAffinity:
+    required: []
+    preferred: []
+  extraPodAffinity:
+    required: []
+    preferred: []
+  extraPodAntiAffinity:
+    required: []
+    preferred: []
   networkTools:
     image:
       name: jupyterhub/k8s-network-tools
@@ -159,10 +170,10 @@ singleuser:
   events: true
   extraAnnotations: {}
   extraLabels: {}
+  storageExtraLabels: {}
   extraEnv: {}
   lifecycleHooks:
   initContainers:
-  nodeSelector: {}
   uid: 1000
   fsGid: 100
   serviceAccountName:
@@ -201,7 +212,7 @@ singleuser:
     limits: {}
     guarantees: {}
   cmd: jupyterhub-singleuser
-  defaultUrl:
+  defaultUrl: /
 
 
 scheduling:
@@ -211,6 +222,26 @@ scheduling:
     image:
       name: gcr.io/google_containers/kube-scheduler-amd64
       tag: v1.11.2
+  podPriority:
+    enabled: false
+  userPlaceholder:
+    enabled: true
+    replicas: 0
+    resources:
+  userDummy:
+    enabled: true
+    replicas: 0
+    # resources.request and resources.limits must only contain keys with values
+    # and be left out if they don't contain any keys
+    resources:
+  corePods:
+    nodeAffinity:
+      matchNodePurpose: prefer
+  userPods:
+    nodeAffinity:
+      matchNodePurpose: prefer
+    podAffinity:
+      preferScheduleNextToRealUsers: true
 
 
 prePuller:
