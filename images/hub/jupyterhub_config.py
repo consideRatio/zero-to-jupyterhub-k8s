@@ -141,7 +141,7 @@ c.KubeSpawner.lifecycle_hooks.update(get_config('singleuser.lifecycle-hooks', {}
 c.KubeSpawner.init_containers.extend(get_config('singleuser.init-containers', []))
 c.KubeSpawner.extra_containers.extend(get_config('singleuser.extra-containers', []))
 
-c.KubeSpawner.events_enabled = get_config('singleuser.events', False)
+c.KubeSpawner.events_enabled = get_config('singleuser.events')
 
 # Volume related
 # ------------------------------------------------------------------------------
@@ -193,7 +193,7 @@ auth_scopes = get_config('auth.scopes')
 if auth_scopes:
     c.OAuthenticator.scope = auth_scopes
 
-c.Authenticator.enable_auth_state = get_config('auth.state.enabled', False)
+c.Authenticator.enable_auth_state = get_config('auth.state.enabled')
 
 # Allow switching authenticators easily
 auth_type = get_config('auth.type')
@@ -305,10 +305,10 @@ c.Authenticator.whitelist = get_config('auth.whitelist.users', [])
 
 c.JupyterHub.services = []
 
-if get_config('cull.enabled', False):
-    cull_timeout = get_config('cull.timeout', 3600)
-    cull_every = get_config('cull.every', 600)
-    cull_concurrency = get_config('cull.concurrency', 10)
+if get_config('cull.enabled'):
+    cull_timeout = get_config('cull.timeout')
+    cull_every = get_config('cull.every')
+    cull_concurrency = get_config('cull.concurrency')
     cull_cmd = [
         '/usr/local/bin/cull_idle_servers.py',
         '--timeout=%s' % cull_timeout,
@@ -369,7 +369,7 @@ if not cloud_metadata.get('enabled', False):
 
 # Configuration related
 # ------------------------------------------------------------------------------
-if get_config('debug.enabled', False):
+if get_config('debug.enabled'):
     c.JupyterHub.log_level = 'DEBUG'
     c.Spawner.debug = True
 
