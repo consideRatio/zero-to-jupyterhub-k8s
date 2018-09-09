@@ -51,6 +51,9 @@ spec:
       {{- if $_.hasTolerations }}
       {{- include "jupyterhub.tolerations" $_ | nindent 6 }}
       {{- end }}
+      {{- if $_.hasAffinity }}
+      {{- include "jupyterhub.affinity" $_ | nindent 6 }}
+      {{- end }}
       volumes:
         - name: config
           configMap:

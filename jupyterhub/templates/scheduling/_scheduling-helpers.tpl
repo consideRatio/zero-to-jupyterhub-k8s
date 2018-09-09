@@ -69,12 +69,26 @@ tolerations:
 
 
 {{- define "jupyterhub.nodeAffinityRequired" -}}
+{{- if eq .matchNodePurpose "require" -}}
+- matchExpressions:
+  - key: hub.jupyter.org/node-purpose
+    operator: In
+    values: [{{ .podKind }}]
+{{- end }}
 {{- if .Values.singleuser.extraNodeAffinity.required -}}
 {{- .Values.singleuser.extraNodeAffinity.required | toYaml | trimSuffix "\n" | nindent 0 }}
 {{- end }}
 {{- end }}
 
 {{- define "jupyterhub.nodeAffinityPreferred" -}}
+{{- if eq .matchNodePurpose "prefer" -}}
+- weight: 100
+  preference:
+    matchExpressions:
+      - key: hub.jupyter.org/node-purpose
+        operator: In
+        values: [{{ .podKind }}]
+{{- end }}
 {{- if .Values.singleuser.extraNodeAffinity.preferred -}}
 {{- .Values.singleuser.extraNodeAffinity.preferred | toYaml | trimSuffix "\n" | nindent 0 }}
 {{- end }}
