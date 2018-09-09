@@ -230,12 +230,16 @@ scheduling:
     pdb:
       enabled: true
       minAvailable: 1
+  podPriority:
+    enabled: false
   corePods:
     nodeAffinity:
       matchNodePurpose: prefer
   userPods:
     nodeAffinity:
       matchNodePurpose: prefer
+    podAffinity:
+      preferScheduleNextToRealUsers: false
 
 
 prePuller:
