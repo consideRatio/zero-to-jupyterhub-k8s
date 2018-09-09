@@ -48,8 +48,7 @@ spec:
         - name: tls-secret
           secret:
             secretName: {{ .Values.proxy.https.secret.name }}
-      {{- end }}
-      {{- if $manualHTTPS }}
+      {{- else if $manualHTTPS }}
       volumes:
         - name: tls-secret
           secret:

@@ -171,9 +171,12 @@ singleuser:
               except:
                 - 169.254.169.254/32
   events: true
-  extraLabels: {}
-  storageExtraLabels: {}
-  extraEnv: {}
+  extraLabels:
+    mock-label: mock-extra-label-value
+  storageExtraLabels:
+    mock-extra-storage-label: mock-extra-storage-label-value
+  extraEnv:
+    MOCK_ENV: MOCK_ENV_VALUE
   lifecycleHooks:
   initContainers:
     - name: mock-init-container-name
