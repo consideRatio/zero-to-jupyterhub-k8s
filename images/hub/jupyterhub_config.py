@@ -262,7 +262,7 @@ c.Authenticator.enable_auth_state = get_config('auth.state.enabled', False)
 c.KubeSpawner.environment.update(get_config('singleuser.extra-env', {}))
 
 # Enable admins to access user servers
-c.JupyterHub.admin_access = get_config('auth.admin.access', False)
+c.JupyterHub.admin_access = get_config('auth.admin.access')
 c.Authenticator.admin_users = get_config('auth.admin.users', [])
 c.Authenticator.whitelist = get_config('auth.whitelist.users', [])
 
@@ -271,10 +271,10 @@ c.JupyterHub.base_url = get_config('hub.base_url')
 
 c.JupyterHub.services = []
 
-if get_config('cull.enabled', False):
-    cull_timeout = get_config('cull.timeout', 3600)
-    cull_every = get_config('cull.every', 600)
-    cull_concurrency = get_config('cull.concurrency', 10)
+if get_config('cull.enabled'):
+    cull_timeout = get_config('cull.timeout')
+    cull_every = get_config('cull.every')
+    cull_concurrency = get_config('cull.concurrency')
     cull_cmd = [
         '/usr/local/bin/cull_idle_servers.py',
         '--timeout=%s' % cull_timeout,
@@ -337,7 +337,7 @@ if not cloud_metadata.get('enabled', False):
     c.KubeSpawner.init_containers.append(ip_block_container)
 
 
-if get_config('debug.enabled', False):
+if get_config('debug.enabled'):
     c.JupyterHub.log_level = 'DEBUG'
     c.Spawner.debug = True
 
