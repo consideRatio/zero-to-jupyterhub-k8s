@@ -36,13 +36,16 @@ spec:
       {{- if .Values.rbac.enabled }}
       serviceAccountName: autohttps
       {{- end }}
-      nodeSelector: {{ toJson .Values.proxy.nodeSelector }}
+      {{- if .Values.scheduling.podPriority.enabled }}
+      priorityClassName: jupyterhub-default-priority
+      {{- end }}
       terminationGracePeriodSeconds: 60
       {{- $_ := merge (dict "podKind" "core") . }}
       {{- $dummy := include "jupyterhub.prepareScope" $_ }}
       {{- if $_.hasTolerations }}
       {{- include "jupyterhub.tolerations" $_ | nindent 6 }}
       {{- end }}
+      nodeSelector: {{ toJson .Values.proxy.nodeSelector }}
       {{- if $_.hasAffinity }}
       {{- include "jupyterhub.affinity" $_ | nindent 6 }}
       {{- end }}
