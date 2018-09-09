@@ -171,9 +171,12 @@ singleuser:
               except:
                 - 169.254.169.254/32
   events: true
-  extraLabels: {}
-  storageExtraLabels: {}
-  extraEnv: {}
+  extraLabels:
+    mock-label: mock-extra-label-value
+  storageExtraLabels:
+    mock-extra-storage-label: mock-extra-storage-label-value
+  extraEnv:
+    MOCK_ENV: MOCK_ENV_VALUE
   lifecycleHooks:
   initContainers:
     - name: mock-init-container-name
@@ -229,6 +232,15 @@ scheduling:
     image:
       name: gcr.io/google_containers/kube-scheduler-amd64
       tag: v1.11.2
+  podPriority:
+    enabled: true
+  userPlaceholder:
+    enabled: true
+    replicas: 1
+    resources:
+  userDummy:
+    enabled: true
+    replicas: 1
   corePods:
     nodeAffinity:
       matchNodePurpose: require

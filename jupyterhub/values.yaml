@@ -215,7 +215,7 @@ singleuser:
     limits: {}
     guarantees: {}
   cmd: jupyterhub-singleuser
-  defaultUrl:
+  defaultUrl: /
 
 
 scheduling:
@@ -230,6 +230,18 @@ scheduling:
     pdb:
       enabled: true
       minAvailable: 1
+  podPriority:
+    enabled: false
+  userPlaceholder:
+    enabled: true
+    replicas: 0
+    resources: {}
+  userDummy:
+    enabled: true
+    replicas: 0
+    # resources.request and resources.limits must only contain keys with values
+    # and be left out if they don't contain any keys
+    resources: {}
   corePods:
     nodeAffinity:
       matchNodePurpose: prefer
