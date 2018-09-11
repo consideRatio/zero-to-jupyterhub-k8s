@@ -224,31 +224,29 @@ data:
   singleuser.tolerations: |
     {{- include "jupyterhub.userTolerations" . | nindent 4 }}
 
-  {{- $_ := merge (dict "podKind" "user") . }}
-  {{- $dummy := include "jupyterhub.prepareScope" $_ }}
-  {{- if $_.nodeAffinityRequired }}
+  {{- if include "jupyterhub.userNodeAffinityRequired" . }}
   singleuser.node-affinity-required: |
-    {{- $_.nodeAffinityRequired | nindent 4 }}
+    {{- include "jupyterhub.userNodeAffinityRequired" . | nindent 4 }}
   {{- end }}
-  {{- if $_.nodeAffinityPreferred }}
+  {{- if include "jupyterhub.userNodeAffinityPreferred" . }}
   singleuser.node-affinity-preferred: |
-    {{- $_.nodeAffinityPreferred | nindent 4 }}
+    {{- include "jupyterhub.userNodeAffinityPreferred" . | nindent 4 }}
   {{- end }}
-  {{- if $_.podAffinityRequired }}
+  {{- if include "jupyterhub.userPodAffinityRequired" . }}
   singleuser.pod-affinity-required: |
-    {{- $_.podAffinityRequired | nindent 4 }}
+    {{- include "jupyterhub.userPodAffinityRequired" . | nindent 4 }}
   {{- end }}
-  {{- if $_.podAffinityPreferred }}
+  {{- if include "jupyterhub.userPodAffinityPreferred" . }}
   singleuser.pod-affinity-preferred: |
-    {{- $_.podAffinityPreferred | nindent 4 }}
+    {{- include "jupyterhub.userPodAffinityPreferred" . | nindent 4 }}
   {{- end }}
-  {{- if $_.podAntiAffinityRequired }}
+  {{- if include "jupyterhub.userPodAntiAffinityRequired" . }}
   singleuser.pod-anti-affinity-required: |
-    {{- $_.podAntiAffinityRequired | nindent 4 }}
+    {{- include "jupyterhub.userPodAntiAffinityRequired" . | nindent 4 }}
   {{- end }}
-  {{- if $_.podAntiAffinityPreferred }}
+  {{- if include "jupyterhub.userPodAntiAffinityPreferred" . }}
   singleuser.pod-anti-affinity-preferred: |
-    {{- $_.podAntiAffinityPreferred | nindent 4 }}
+    {{- include "jupyterhub.userPodAntiAffinityPreferred" . | nindent 4 }}
   {{- end }}
 
   {{- if .Values.scheduling.userScheduler.enabled }}

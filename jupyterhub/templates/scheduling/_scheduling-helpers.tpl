@@ -18,115 +18,80 @@
 
 
 
-{{- define "jupyterhub.prepareScope" -}}
-{{- $dummy := set . "nodeAffinityRequired" (include "jupyterhub.nodeAffinityRequired" .) }}
-{{- $dummy := set . "podAffinityRequired" (include "jupyterhub.podAffinityRequired" .) }}
-{{- $dummy := set . "podAntiAffinityRequired" (include "jupyterhub.podAntiAffinityRequired" .) }}
-{{- $dummy := set . "nodeAffinityPreferred" (include "jupyterhub.nodeAffinityPreferred" .) }}
-{{- $dummy := set . "podAffinityPreferred" (include "jupyterhub.podAffinityPreferred" .) }}
-{{- $dummy := set . "podAntiAffinityPreferred" (include "jupyterhub.podAntiAffinityPreferred" .) }}
-{{- $dummy := set . "hasNodeAffinity" (or .nodeAffinityRequired .nodeAffinityPreferred) }}
-{{- $dummy := set . "hasPodAffinity" (or .podAffinityRequired .podAffinityPreferred) }}
-{{- $dummy := set . "hasPodAntiAffinity" (or .podAntiAffinityRequired .podAntiAffinityPreferred) }}
-{{- $dummy := set . "hasAffinity" (or .hasNodeAffinity .hasPodAffinity .hasPodAntiAffinity) }}
+{{- define "jupyterhub.userNodeAffinityRequired" -}}
+{{- if eq .Values.scheduling.userPods.nodeAffinity.matchNodePurpose "require" -}}
+- matchExpressions:
+  - key: hub.jupyter.org/node-purpose
+    operator: In
+    values: [user]
 {{- end }}
-
-
-
-{{- define "jupyterhub.nodeAffinityRequired" -}}
 {{- if .Values.singleuser.extraNodeAffinity.required -}}
 {{- .Values.singleuser.extraNodeAffinity.required | toYaml | trimSuffix "\n" | nindent 0 }}
 {{- end }}
 {{- end }}
 
-{{- define "jupyterhub.nodeAffinityPreferred" -}}
+{{- define "jupyterhub.userNodeAffinityPreferred" -}}
+{{- if eq .Values.scheduling.userPods.nodeAffinity.matchNodePurpose "prefer" -}}
+- weight: 100
+  preference:
+    matchExpressions:
+      - key: hub.jupyter.org/node-purpose
+        operator: In
+        values: [user]
+{{- end }}
 {{- if .Values.singleuser.extraNodeAffinity.preferred -}}
 {{- .Values.singleuser.extraNodeAffinity.preferred | toYaml | trimSuffix "\n" | nindent 0 }}
 {{- end }}
 {{- end }}
 
-{{- define "jupyterhub.podAffinityRequired" -}}
-{{- if eq .podKind "core" -}}
-{{- else if eq .podKind "user" -}}
+{{- define "jupyterhub.userPodAffinityRequired" -}}
 {{- if .Values.singleuser.extraPodAffinity.required }}
 {{- .Values.singleuser.extraPodAffinity.required | toYaml | trimSuffix "\n" | nindent 0 }}
 {{- end }}
 {{- end }}
-{{- end }}
 
-{{- define "jupyterhub.podAffinityPreferred" -}}
-{{- if eq .podKind "core" -}}
-{{- else if eq .podKind "user" -}}
+{{- define "jupyterhub.userPodAffinityPreferred" -}}
 {{- if .Values.singleuser.extraPodAffinity.preferred -}}
 {{- .Values.singleuser.extraPodAffinity.preferred | toYaml | trimSuffix "\n" | nindent 0 }}
 {{- end }}
 {{- end }}
-{{- end }}
 
-{{- define "jupyterhub.podAntiAffinityRequired" -}}
-{{- if eq .podKind "core" -}}
-{{- else if eq .podKind "user" -}}
+{{- define "jupyterhub.userPodAntiAffinityRequired" -}}
 {{- if .Values.singleuser.extraPodAntiAffinity.required -}}
 {{- .Values.singleuser.extraPodAntiAffinity.required | toYaml | trimSuffix "\n" | nindent 0 }}
 {{- end }}
 {{- end }}
-{{- end }}
 
-{{- define "jupyterhub.podAntiAffinityPreferred" -}}
-{{- if eq .podKind "core" -}}
-{{- else if eq .podKind "user" -}}
+{{- define "jupyterhub.userPodAntiAffinityPreferred" -}}
 {{- if .Values.singleuser.extraPodAntiAffinity.preferred -}}
 {{- .Values.singleuser.extraPodAntiAffinity.preferred | toYaml | trimSuffix "\n" | nindent 0 }}
 {{- end }}
 {{- end }}
-{{- end }}
 
 
 
-{{- /*
-  input: podKind
-*/}}
-{{- define "jupyterhub.affinity" -}}
-{{- if .hasAffinity -}}
+{{- define "jupyterhub.coreAffinity" -}}
+{{- $require := eq .Values.scheduling.corePods.nodeAffinity.matchNodePurpose "require" -}}
+{{- $prefer := eq .Values.scheduling.corePods.nodeAffinity.matchNodePurpose "prefer" -}}
+{{- if or $require $prefer -}}
 affinity:
-  {{- if .hasNodeAffinity }}
   nodeAffinity:
-    {{- if .nodeAffinityRequired }}
+    {{- if $require }}
     requiredDuringSchedulingIgnoredDuringExecution:
       nodeSelectorTerms:
-        {{- .nodeAffinityRequired | nindent 8 }}
+        - matchExpressions:
+          - key: hub.jupyter.org/node-purpose
+            operator: In
+            values: [core]
     {{- end }}
-
-    {{- if .nodeAffinityPreferred }}
+    {{- if $prefer }}
     preferredDuringSchedulingIgnoredDuringExecution:
-      {{- .nodeAffinityPreferred | nindent 6 }}
+      - weight: 100
+        preference:
+          matchExpressions:
+            - key: hub.jupyter.org/node-purpose
+              operator: In
+              values: [core]
     {{- end }}
-  {{- end }}
-
-  {{- if .hasPodAffinity }}
-  podAffinity:
-    {{- if .podAffinityRequired }}
-    requiredDuringSchedulingIgnoredDuringExecution:
-      {{- .podAffinityRequired | nindent 6 }}
-    {{- end }}
-
-    {{- if .podAffinityPreferred }}
-    preferredDuringSchedulingIgnoredDuringExecution:
-      {{- .podAffinityPreferred | nindent 6 }}
-    {{- end }}
-  {{- end }}
-
-  {{- if .hasPodAntiAffinity }}
-  podAntiAffinity:
-    {{- if .podAntiAffinityRequired }}
-    requiredDuringSchedulingIgnoredDuringExecution:
-      {{- .podAntiAffinityRequired | nindent 6 }}
-    {{- end }}
-
-    {{- if .podAntiAffinityPreferred }}
-    preferredDuringSchedulingIgnoredDuringExecution:
-      {{- .podAntiAffinityPreferred | nindent 6 }}
-    {{- end }}
-  {{- end }}
 {{- end }}
 {{- end }}

@@ -38,15 +38,13 @@ spec:
     spec:
       tolerations:
         {{- include "jupyterhub.userTolerations" . | nindent 8 }}
-      {{- $_ := merge (dict "podKind" "user") . }}
-      {{- $dummy := include "jupyterhub.prepareScope" $_ }}
       nodeSelector: {{ toJson .Values.singleuser.nodeSelector }}
-      {{- if $_.nodeAffinityRequired }}
+      {{- if (include "jupyterhub.userNodeAffinityRequired" .) }}
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
-              {{- $_.nodeAffinityRequired | nindent 14 }}
+              {{- include "jupyterhub.userNodeAffinityRequired" . | nindent 14 }}
       {{- end }}
       terminationGracePeriodSeconds: 0
       automountServiceAccountToken: false
