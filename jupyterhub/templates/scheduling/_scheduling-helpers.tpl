@@ -11,6 +11,14 @@
 {{- $dummy := set . "component" (include "jupyterhub.componentLabel" .) }}
 
 {{- /* Fetch relevant information */}}
+{{- if .podKind }}
+{{- if eq .podKind "core" -}}
+{{- $dummy := set . "matchNodePurpose" .Values.scheduling.corePods.nodeAffinity.matchNodePurpose }}
+{{- else if eq .podKind "user" -}}
+{{- $dummy := set . "matchNodePurpose" .Values.scheduling.userPods.nodeAffinity.matchNodePurpose }}
+{{- end }}
+{{- end }}
+
 {{- $dummy := set . "tolerationsList" (include "jupyterhub.tolerationsList" .) }}
 {{- $dummy := set . "tolerations" (include "jupyterhub.tolerations" .) }}
 {{- $dummy := set . "hasTolerations" .tolerations }}
@@ -25,6 +33,7 @@
 {{- $dummy := set . "hasPodAffinity" (or .podAffinityRequired .podAffinityPreferred) }}
 {{- $dummy := set . "hasPodAntiAffinity" (or .podAntiAffinityRequired .podAntiAffinityPreferred) }}
 {{- $dummy := set . "hasAffinity" (or .hasNodeAffinity .hasPodAffinity .hasPodAntiAffinity) }}
+
 {{- end }}
 
 
@@ -60,12 +69,26 @@ tolerations:
 
 
 {{- define "jupyterhub.nodeAffinityRequired" -}}
+{{- if eq .matchNodePurpose "require" -}}
+- matchExpressions:
+  - key: hub.jupyter.org/node-purpose
+    operator: In
+    values: [{{ .podKind }}]
+{{- end }}
 {{- if .Values.singleuser.extraNodeAffinity.required -}}
 {{- .Values.singleuser.extraNodeAffinity.required | toYaml | trimSuffix "\n" | nindent 0 }}
 {{- end }}
 {{- end }}
 
 {{- define "jupyterhub.nodeAffinityPreferred" -}}
+{{- if eq .matchNodePurpose "prefer" -}}
+- weight: 100
+  preference:
+    matchExpressions:
+      - key: hub.jupyter.org/node-purpose
+        operator: In
+        values: [{{ .podKind }}]
+{{- end }}
 {{- if .Values.singleuser.extraNodeAffinity.preferred -}}
 {{- .Values.singleuser.extraNodeAffinity.preferred | toYaml | trimSuffix "\n" | nindent 0 }}
 {{- end }}
@@ -83,6 +106,16 @@ tolerations:
 {{- define "jupyterhub.podAffinityPreferred" -}}
 {{- if eq .podKind "core" -}}
 {{- else if eq .podKind "user" -}}
+{{- if .Values.scheduling.userPods.podAffinity.preferScheduleNextToRealUsers -}}
+- weight: 100
+  podAffinityTerm:
+    labelSelector:
+      matchExpressions:
+        - key: component
+          operator: In
+          values: [singleuser-server]
+    topologyKey: kubernetes.io/hostname
+{{- end }}
 {{- if .Values.singleuser.extraPodAffinity.preferred -}}
 {{- .Values.singleuser.extraPodAffinity.preferred | toYaml | trimSuffix "\n" | nindent 0 }}
 {{- end }}

@@ -6,18 +6,45 @@ from kubernetes import client
 from z2jh import get_config, get_secret, set_config_if_not_none
 from jupyterhub.utils import url_path_join
 
+# About traitlets
+# ------------------------------------------------------------------------------
+# In order to understand how this configuration works, it is useful to read the
+# traitlets documentation: https://traitlets.readthedocs.io/en/stable/config.html
+#
+# A Configuration object (traitlets.config.Config) is made available as `c` in
+# this file.
+#
+### Lazy evaluation and default value initialization
+# If you would print c.KubeSpawner.common_labels now within this file, you would
+# get...
+#
+# <traitlets.config.loader.LazyConfigValue object at 0x7f1c53071a20>
+#
+# But if you would run the following...
+#
+# c.KubeSpawner.common_labels.update({'heritage': 'something-new'})
+#
+# You would be fine, and end up with...
+#
+# {'app': 'jupyterhub', 'heritage': 'something-new'}
+#
+# Where these labels were the default of KubeSpawner.common_labels but you
+# overrode the second labels value.
+
+# Network related
+# ------------------------------------------------------------------------------
 # Configure JupyterHub to use the curl backend for making HTTP requests,
 # rather than the pure-python implementations. The default one starts
 # being too slow to make a large number of requests to the proxy API
 # at the rate required.
 AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient")
 
-c.JupyterHub.spawner_class = 'kubespawner.KubeSpawner'
-
 # Connect to a proxy running in a different pod
 c.ConfigurableHTTPProxy.api_url = 'http://{}:{}'.format(os.environ['PROXY_API_SERVICE_HOST'], int(os.environ['PROXY_API_SERVICE_PORT']))
 c.ConfigurableHTTPProxy.should_start = False
 
+# Hub related
+# ------------------------------------------------------------------------------
 # Do not shut down user pods when hub is restarted
 c.JupyterHub.cleanup_servers = False
 
@@ -29,50 +56,73 @@ c.JupyterHub.tornado_settings = {
     'slow_spawn_timeout': 0,
 }
 
-for trait, cfg_key in (
-    # Max number of servers that can be spawning at any one time
-    ('concurrent_spawn_limit', 'concurrent-spawn-limit'),
-    # Max number of consecutive failures before the Hub restarts itself
-    # requires jupyterhub 0.9.2
-    ('consecutive_failure_limit', 'consecutive-failure-limit'),
-    # Max number of servers to be running at one time
-    ('active_server_limit', 'active-server-limit'),
-):
-    set_config_if_not_none(c.JupyterHub, trait, 'hub.' + cfg_key)
+# Max number of servers that can be spawning at any one time
+c.JupyterHub.concurrent_spawn_limit = get_config('hub.concurrent-spawn-limit') # values.yaml defaulted
+c.JupyterHub.allow_named_servers = get_config('hub.allow-named-servers') # values.yaml defaulted
+c.JupyterHub.active_server_limit = int(get_config('hub.active-server-limit')) # values.yaml defaulted
 
+c.JupyterHub.base_url = get_config('hub.base-url') # values.yaml defaulted
+c.JupyterHub.db_url = get_config('hub.db-url') # values.yaml defaulted
 c.JupyterHub.ip = os.environ['PROXY_PUBLIC_SERVICE_HOST']
 c.JupyterHub.port = int(os.environ['PROXY_PUBLIC_SERVICE_PORT'])
 
 # the hub should listen on all interfaces, so the proxy can access it
 c.JupyterHub.hub_ip = '0.0.0.0'
-c.KubeSpawner.extra_labels = get_config('singleuser.extra-labels', {})
+c.JupyterHub.hub_connect_ip = os.environ['HUB_SERVICE_HOST']
+c.JupyterHub.hub_connect_port = int(os.environ['HUB_SERVICE_PORT'])
+
+c.JupyterHub.spawner_class = 'kubespawner.KubeSpawner'
+
+# Spawner related
+# ------------------------------------------------------------------------------
+c.Spawner.cmd = get_config('singleuser.cmd') # values.yaml defaulted
+c.Spawner.default_url = get_config('singleuser.default-url') # values.yaml defaulted
+
+# Max number of consecutive failures before the Hub restarts itself
+# requires jupyterhub 0.9.2
+c.Spawner.consecutive_failure_limit = int(get_config('hub.consecutive-failure-limit')) # values.yaml defaulted
+
+# Gives spawned containers access to the API of the hub
+# FIXME: KubeSpawner duplicate hub_connect config should be deprecated and removed
+c.KubeSpawner.hub_connect_ip = os.environ['HUB_SERVICE_HOST']
+c.KubeSpawner.hub_connect_port = int(os.environ['HUB_SERVICE_PORT'])
+if os.environ.get('POD_NAMESPACE'):
+    c.KubeSpawner.namespace = os.environ.get('POD_NAMESPACE')
+
+c.KubeSpawner.environment.update(get_config('singleuser.extra-env', {}))
+
+c.KubeSpawner.common_labels.update(get_config('kubespawner.common-labels', {}))
+c.KubeSpawner.extra_labels.update(get_config('singleuser.extra-labels', {}))
 c.KubeSpawner.extra_labels.update({
     "hub.jupyter.org/pod-kind": "user"
 })
+c.KubeSpawner.extra_annotations.update(get_config('singleuser.extra-annotations', {}))
 
-set_config_if_not_none(c.KubeSpawner, 'common_labels', 'kubespawner.common-labels')
-
-c.KubeSpawner.namespace = os.environ.get('POD_NAMESPACE', 'default')
-
-
-for trait, cfg_key in (
-    ('start_timeout', 'start-timeout'),
-    ('image_pull_policy', 'image-pull-policy'),
-    ('image_pull_secrets', 'image-pull-secret-name'),
-    ('events_enabled', 'events'),
-    ('extra_annotations', 'extra-annotations'),
-    ('uid', 'uid'),
-    ('fs_gid', 'fs-gid'),
-    ('service_account', 'service-account-name'),
-    ('scheduler_name', 'scheduler-name'),
-):
-    set_config_if_not_none(c.KubeSpawner, trait, 'singleuser.' + cfg_key)
-c.KubeSpawner.storage_extra_labels = get_config('singleuser.storage-extra-labels', {})
+c.KubeSpawner.storage_extra_labels.update(get_config('singleuser.storage-extra-labels', {}))
 c.KubeSpawner.storage_extra_labels.update({
     "hub.jupyter.org/storage-kind": "user"
 })
 
-c.KubeSpawner.image_spec = get_config('singleuser.image-spec')
+c.KubeSpawner.start_timeout = get_config('singleuser.start-timeout') # values.yaml defaulted
+c.KubeSpawner.image_spec = get_config('singleuser.image-spec') # values.yaml defaulted
+c.KubeSpawner.image_pull_policy = get_config('singleuser.image-pull-policy') # values.yaml defaulted
+c.KubeSpawner.image_pull_secrets = get_config('singleuser.image-pull-secret-name') # SINN
+
+c.KubeSpawner.mem_limit = get_config('singleuser.memory.limit') #SINN
+c.KubeSpawner.mem_guarantee = get_config('singleuser.memory.guarantee') #SINN
+c.KubeSpawner.cpu_limit = get_config('singleuser.cpu.limit') #SINN
+c.KubeSpawner.cpu_guarantee = get_config('singleuser.cpu.guarantee') #SINN
+c.KubeSpawner.extra_resource_limits.update(get_config('singleuser.extra-resource.limits', {}))
+c.KubeSpawner.extra_resource_guarantees.update(get_config('singleuser.extra-resource.guarantees', {}))
+
+c.KubeSpawner.uid = get_config('singleuser.uid') # values.yaml defaulted
+c.KubeSpawner.fs_gid = get_config('singleuser.fs-gid') # values.yaml defaulted
+
+c.KubeSpawner.events_enabled = get_config('singleuser.events') # SINN
+c.KubeSpawner.service_account = get_config('singleuser.service-account-name') # SINN
+c.KubeSpawner.scheduler_name = get_config('singleuser.scheduler-name') # SINN
+c.KubeSpawner.priority_class_name = get_config('singleuser.priority-class-name') # SINN
+
 c.KubeSpawner.tolerations.extend(get_config('singleuser.tolerations', []))
 c.KubeSpawner.node_selector.update(get_config('singleuser.node-selector', {}))
 c.KubeSpawner.node_affinity_required.extend(get_config('singleuser.node-affinity-required', []))
@@ -81,81 +131,60 @@ c.KubeSpawner.pod_affinity_required.extend(get_config('singleuser.pod-affinity-r
 c.KubeSpawner.pod_affinity_preferred.extend(get_config('singleuser.pod-affinity-preferred', []))
 c.KubeSpawner.pod_anti_affinity_required.extend(get_config('singleuser.pod-anti-affinity-required', []))
 c.KubeSpawner.pod_anti_affinity_preferred.extend(get_config('singleuser.pod-anti-affinity-preferred', []))
+c.KubeSpawner.lifecycle_hooks.update(get_config('singleuser.lifecycle-hooks', {}))
+c.KubeSpawner.init_containers.extend(get_config('singleuser.init-containers', []))
+c.KubeSpawner.extra_containers.extend(get_config('singleuser.extra-containers', []))
+
+# Volume related
+# ------------------------------------------------------------------------------
 # Configure dynamically provisioning pvc
 storage_type = get_config('singleuser.storage.type')
 if storage_type == 'dynamic':
-    pvc_name_template = get_config('singleuser.storage.dynamic.pvc-name-template')
-    c.KubeSpawner.pvc_name_template = pvc_name_template
-    volume_name_template = get_config('singleuser.storage.dynamic.volume-name-template')
+    c.KubeSpawner.pvc_name_template = get_config('singleuser.storage.dynamic.pvc-name-template') # values.yaml defaulted
     c.KubeSpawner.storage_pvc_ensure = True
-    set_config_if_not_none(c.KubeSpawner, 'storage_class', 'singleuser.storage.dynamic.storage-class')
-    set_config_if_not_none(c.KubeSpawner, 'storage_access_modes', 'singleuser.storage.dynamic.storage-access-modes')
-    set_config_if_not_none(c.KubeSpawner, 'storage_capacity', 'singleuser.storage.capacity')
+    c.KubeSpawner.storage_class = get_config('singleuser.storage.dynamic.storage-class') # values.yaml defaulted
+    c.KubeSpawner.storage_access_modes = get_config('singleuser.storage.dynamic.storage-access-modes') # values.yaml defaulted
+    c.KubeSpawner.storage_capacity = get_config('singleuser.storage.capacity') # values.yaml defaulted
 
     # Add volumes to singleuser pods
-    c.KubeSpawner.volumes = [
-        {
-            'name': volume_name_template,
-            'persistentVolumeClaim': {
-                'claimName': pvc_name_template
-            }
+    c.KubeSpawner.volumes = [{
+        'name': get_config('singleuser.storage.dynamic.volume-name-template'), # values.yaml defaulted
+        'persistentVolumeClaim': {
+            'claimName': c.KubeSpawner.pvc_name_template
         }
-    ]
-    c.KubeSpawner.volume_mounts = [
-        {
-            'mountPath': get_config('singleuser.storage.home_mount_path'),
-            'name': volume_name_template
-        }
-    ]
+    }]
+    c.KubeSpawner.volume_mounts = [{
+        'name': get_config('singleuser.storage.dynamic.volume-name-template'), # values.yaml defaulted
+        'mountPath': get_config('singleuser.storage.home_mount_path'), # values.yaml defaulted
+    }]
 elif storage_type == 'static':
-    pvc_claim_name = get_config('singleuser.storage.static.pvc-name')
     c.KubeSpawner.volumes = [{
         'name': 'home',
         'persistentVolumeClaim': {
-            'claimName': pvc_claim_name
+            'claimName': get_config('singleuser.storage.static.pvc-name'), # values.yaml defaulted
         }
     }]
 
     c.KubeSpawner.volume_mounts = [{
-        'mountPath': get_config('singleuser.storage.home_mount_path'),
         'name': 'home',
-        'subPath': get_config('singleuser.storage.static.sub-path')
+        'mountPath': get_config('singleuser.storage.home_mount_path'), # values.yaml defaulted
+        'subPath': get_config('singleuser.storage.static.sub-path'), # values.yaml defaulted
     }]
 
 c.KubeSpawner.volumes.extend(get_config('singleuser.storage.extra-volumes', []))
 c.KubeSpawner.volume_mounts.extend(get_config('singleuser.storage.extra-volume-mounts', []))
 
-set_config_if_not_none(c.KubeSpawner, 'lifecycle_hooks', 'singleuser.lifecycle-hooks')
 
-init_containers = get_config('singleuser.init-containers')
-if init_containers:
-    c.KubeSpawner.init_containers.extend(init_containers)
+# Auth related
+# ------------------------------------------------------------------------------
+auth_scopes = get_config('auth.scopes')
+if auth_scopes:
+    c.OAuthenticator.scope = auth_scopes
 
-extra_containers = get_config('singleuser.extra-containers')
-if extra_containers:
-    c.KubeSpawner.extra_containers.extend(extra_containers)
-
-# Gives spawned containers access to the API of the hub
-# FIXME: KubeSpawner duplicate hub_connect config should be deprecated and removed
-c.KubeSpawner.hub_connect_ip = os.environ['HUB_SERVICE_HOST']
-c.KubeSpawner.hub_connect_port = int(os.environ['HUB_SERVICE_PORT'])
-
-c.JupyterHub.hub_connect_ip = os.environ['HUB_SERVICE_HOST']
-c.JupyterHub.hub_connect_port = int(os.environ['HUB_SERVICE_PORT'])
-
-for trait, cfg_key in (
-    ('mem_limit', 'singleuser.memory.limit'),
-    ('mem_guarantee', 'singleuser.memory.guarantee'),
-    ('cpu_limit', 'singleuser.cpu.limit'),
-    ('cpu_guarantee', 'singleuser.cpu.guarantee'),
-    ('extra_resource_limits', 'singleuser.extra-resource.limits'),
-    ('extra_resource_guarantees', 'singleuser.extra-resource.guarantees'),
-):
-    set_config_if_not_none(c.KubeSpawner, trait, cfg_key)
+c.Authenticator.enable_auth_state = get_config('auth.state.enabled') # values.yaml defaulted
 
 # Allow switching authenticators easily
-auth_type = get_config('auth.type')
-email_domain = 'local'
+auth_type = get_config('auth.type') # values.yaml defaulted
 
 if auth_type == 'google':
     c.JupyterHub.authenticator_class = 'oauthenticator.GoogleOAuthenticator'
@@ -167,7 +196,6 @@ if auth_type == 'google':
         ('login_service', 'login-service'),
     ):
         set_config_if_not_none(c.GoogleOAuthenticator, trait, 'auth.google.' + cfg_key)
-    email_domain = get_config('auth.google.hosted-domain')
 elif auth_type == 'github':
     c.JupyterHub.authenticator_class = 'oauthenticator.github.GitHubOAuthenticator'
     for trait, cfg_key in (
@@ -252,26 +280,21 @@ elif auth_type == 'custom':
 else:
     raise ValueError("Unhandled auth type: %r" % auth_type)
 
-set_config_if_not_none(c.OAuthenticator, 'scope', 'auth.scopes')
-
-c.Authenticator.enable_auth_state = get_config('auth.state.enabled', False)
-
-c.KubeSpawner.environment.update(get_config('singleuser.extra-env', {}))
-
 # Enable admins to access user servers
-c.JupyterHub.admin_access = get_config('auth.admin.access', False)
+c.JupyterHub.admin_access = get_config('auth.admin.access')  # values.yaml defaulted
 c.Authenticator.admin_users = get_config('auth.admin.users', [])
 c.Authenticator.whitelist = get_config('auth.whitelist.users', [])
 
-set_config_if_not_none(c.JupyterHub, 'base_url', 'hub.base_url')
-c.JupyterHub.base_url = get_config('hub.base_url')
+
+# JupyterHub services
+# ------------------------------------------------------------------------------
 
 c.JupyterHub.services = []
 
-if get_config('cull.enabled', False):
-    cull_timeout = get_config('cull.timeout', 3600)
-    cull_every = get_config('cull.every', 600)
-    cull_concurrency = get_config('cull.concurrency', 10)
+if get_config('cull.enabled'):
+    cull_timeout = get_config('cull.timeout') # values.yaml defaulted
+    cull_every = get_config('cull.every') # values.yaml defaulted
+    cull_concurrency = get_config('cull.concurrency') # values.yaml defaulted
     cull_cmd = [
         '/usr/local/bin/cull_idle_servers.py',
         '--timeout=%s' % cull_timeout,
@@ -280,10 +303,10 @@ if get_config('cull.enabled', False):
         '--url=http://127.0.0.1:8081' + url_path_join(c.JupyterHub.base_url, 'hub/api'),
     ]
 
-    if get_config('cull.users'):
+    if get_config('cull.users'): # values.yaml defaulted
         cull_cmd.append('--cull-users')
 
-    cull_max_age = get_config('cull.max-age')
+    cull_max_age = get_config('cull.max-age') # values.yaml defaulted
     if cull_max_age:
         cull_cmd.append('--max-age=%s' % cull_max_age)
 
@@ -303,18 +326,14 @@ for name, service in get_config('hub.services', {}).items():
     c.JupyterHub.services.append(service)
 
 
-set_config_if_not_none(c.JupyterHub, 'db_url', 'hub.db_url')
-set_config_if_not_none(c.JupyterHub, 'allow_named_servers', 'hub.allow-named-servers')
-
-set_config_if_not_none(c.Spawner, 'cmd', 'singleuser.cmd')
-set_config_if_not_none(c.Spawner, 'default_url', 'singleuser.default-url')
-
+# Security related
+# ------------------------------------------------------------------------------
 cloud_metadata = get_config('singleuser.cloud-metadata', {})
 
 if not cloud_metadata.get('enabled', False):
     # Use iptables to block access to cloud metadata by default
-    network_tools_image_name = get_config('singleuser.network-tools.image.name')
-    network_tools_image_tag = get_config('singleuser.network-tools.image.tag')
+    network_tools_image_name = get_config('singleuser.network-tools.image.name') # values.yaml defaulted
+    network_tools_image_tag = get_config('singleuser.network-tools.image.tag') # values.yaml defaulted
     ip_block_container = client.V1Container(
         name="block-cloud-metadata",
         image=f"{network_tools_image_name}:{network_tools_image_tag}",
@@ -334,7 +353,9 @@ if not cloud_metadata.get('enabled', False):
     c.KubeSpawner.init_containers.append(ip_block_container)
 
 
-if get_config('debug.enabled', False):
+# Configuration related
+# ------------------------------------------------------------------------------
+if get_config('debug.enabled'): # values.yaml defaulted
     c.JupyterHub.log_level = 'DEBUG'
     c.Spawner.debug = True
 
