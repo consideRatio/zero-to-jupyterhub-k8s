@@ -22,7 +22,7 @@ properties:
 
           Changing this value will all user logins to be invalidated. If this secret leaks,
           *immediately* change it to something else, or user data can be compromised
-          
+
           ```sh
           # to generate a value, run
           openssl rand -hex 32
@@ -61,7 +61,7 @@ properties:
             type: string
             description: |
               The tag of the image to pull.
-              
+
               This is the value after the `:` in your full image name.
 
               ```
@@ -322,7 +322,7 @@ properties:
         type: object
         description: |
           Set Memory limits & guarantees that are enforced for each user.
-          
+
           See the [Kubernetes docs](https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container)
           for more info.
         properties:
@@ -341,10 +341,10 @@ properties:
         description: |
           Creates an image pull secret for you and makes the user pods utilize
           it, allowing them to pull images from private image registries.
-          
+
           Using this configuration option automates the following steps that
           normally is required to pull from private image registries.
-          
+
           ```sh
           # you won't need to run this manually...
           kubectl create secret docker-registry singleuser-image-credentials \
@@ -408,7 +408,7 @@ properties:
 
               For gcr.io registries the password will be a big JSON blob for a
               Google cloud service account, it should look something like below.
-                            
+
               ```yaml
               password: |-
                 {
@@ -460,6 +460,81 @@ properties:
         description: |
           Deprecated and no longer does anything. Use the user-scheduler instead
           in order to accomplish a good packing of the user pods.
+      tolerations:
+        type: list
+        description: |
+          Tolerations allow a pod to be scheduled on nodes with taints. These
+          are additional tolerations other than the user pods and core pods
+          default ones `hub.jupyter.org/dedicated=user:NoSchedule` or
+          `hub.jupyter.org/dedicated=core:NoSchedule`. Note that a duplicate set
+          of tolerations exist where `/` is replaced with `_` as the Google
+          cloud does not support the character `/` yet in the toleration.
+
+          See the [Kubernetes docs](https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/)
+          for more info.
+
+          Pass this field an array of
+          [`Toleration`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#toleration-v1-core)
+          objects.
+      extraNodeAffinity:
+        type: object
+        description: |
+          Affinities describe where pods prefer or require to be scheduled, they
+          may prefer or require a node where they are to be scheduled to have a
+          certain label (node affinity). They may also require to be scheduled
+          in proximity or with a lack of proximity to another pod (pod affinity
+          and anti pod affinity).
+          
+          See the [Kubernetes
+          docs](https://kubernetes.io/docs/concepts/configuration/assign-pod-node/)
+          for more info.
+        properties:
+          required:
+            type: list
+            description: |
+              Pass this field an array of
+              [`NodeSelectorTerm`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#nodeselectorterm-v1-core)
+              objects.
+          preferred:
+            type: list
+            description: |
+              Pass this field an array of
+              [`PreferredSchedulingTerm`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#preferredschedulingterm-v1-core)
+              objects.
+      extraPodAffinity:
+        type: object
+        description: |
+          See the description of `singleuser.extraNodeAffinity`.
+        properties:
+          required:
+            type: list
+            description: |
+              Pass this field an array of
+              [`PodAffinityTerm`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#podaffinityterm-v1-core)
+              objects.
+          preferred:
+            type: list
+            description: |
+              Pass this field an array of
+              [`WeightedPodAffinityTerm`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#weightedpodaffinityterm-v1-core)
+              objects.
+      extraPodAntiAffinity:
+        type: object
+        description: |
+          See the description of `singleuser.extraNodeAffinity`.
+        properties:
+          required:
+            type: list
+            description: |
+              Pass this field an array of
+              [`PodAffinityTerm`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#podaffinityterm-v1-core)
+              objects.
+          preferred:
+            type: list
+            description: |
+              Pass this field an array of
+              [`WeightedPodAffinityTerm`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#weightedpodaffinityterm-v1-core)
+              objects.
 
 
   scheduling:
