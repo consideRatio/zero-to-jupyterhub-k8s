@@ -2,93 +2,66 @@
 
 Welcome! As a [Jupyter](https://jupyter.org) project, we follow the [Jupyter contributor guide](https://jupyter.readthedocs.io/en/latest/contributor/content-contributor.html).
 
-## Setting up minikube for local development
+## Setting up kind for local development
 
-We recommend using [minikube](https://github.com/kubernetes/minikube) for local
-development.
+1. [Download & install kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 
-1. [Download & install minikube](https://github.com/kubernetes/minikube#installation).
+1. [Download & install helm](https://github.com/helm/helm#install).
 
-   For MacOS: You may install minikube using Homebrew `brew cask install minikube` or
-   from a binary at https://github.com/kubernetes/minikube/releases.
-   If you need to install Docker Community Edition (CE) for Mac, please
-   follow the [Docker instructions](https://store.docker.com/editions/community/docker-ce-desktop-mac).
+1. [Download & install kind](https://github.com/kubernetes-sigs/kind#installation-and-usage)
 
-2. [Download & install helm](https://github.com/helm/helm#install).
-
-   You may install Helm using one of the following steps:
-
-   * With the following curl command:
-
-     ```
-     curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
-     ```
-   * From one of the binaries at https://github.com/helm/helm/releases
-   * For MacOS, using Homebrew: `brew install kubernetes-helm`
-
-3. Start minikube.
-
-   For minikube version 0.26 and higher:
-   ```bash
-   minikube start
-   ```
-
-   For older minikube versions:
-   ```bash
-   minikube start --extra-config=apiserver.Authorization.Mode=RBAC
-   ```
-
-   Note on troubleshooting: if you recently upgraded minikube and are now seeing
-   errors, you may need to clear out the `~/.minikube` and `~/.kube` directories
-   and reboot.
-
-4. Use the docker daemon inside minikube for building:
-   ```bash
-   eval $(minikube docker-env)
-   ```
-
-5. Clone the zero-to-jupyterhub repo:
+1. Clone this git repository:
    ```bash
    git clone git@github.com:jupyterhub/zero-to-jupyterhub-k8s.git
+   #git clone https://github.com/jupyterhub/zero-to-jupyterhub-k8s
    cd zero-to-jupyterhub-k8s
    ```
 
-6. Create a virtualenv & install the libraries required for builds to happen:
+1. Create a virtualenv & install the libraries required for builds to happen:
    ```bash
    python3 -m venv .
    source bin/activate
    python3 -m pip install -r dev-requirements.txt
    ```
 
-7. Now run `chartpress` to build the requisite docker images inside minikube:
+1. Now run `chartpress` to build the requisite docker images:
     ```bash
     chartpress
     ```
 
-    This will build the docker images inside minikube & modify
-    `jupyterhub/values.yaml` with the appropriate values to make the chart
-    installable!
+    This will build the docker images & modify `jupyterhub/values.yaml` with the
+    appropriate values to make the chart installable!
 
-8. Configure helm and minikube for RBAC:
+1. Start a local Kubernetes cluster with `kind`
+
    ```bash
+   kind cluster create
+   export KUBECONFIG=”$(kind get kubeconfig-path)”
+   ```
+
+1. Install what helm needs to work with your cluster, tiller:
+   ```bash
+   # Setup credentials to be used by tiller 
    kubectl create clusterrolebinding add-on-cluster-admin --clusterrole=cluster-admin --serviceaccount=kube-system:default
-   kubectl --namespace kube-system create sa tiller
+   kubectl --namespace kube-system create serviceaccount tiller
    kubectl create clusterrolebinding tiller \
        --clusterrole cluster-admin \
        --serviceaccount=kube-system:tiller
+  
+   # Install tiller
    helm init --service-account tiller
    ```
 
-9. Install / Upgrade JupyterHub Chart!
+1. Install / Upgrade the JupyterHub Helm chart!
    ```bash
-   helm upgrade --wait --install --namespace=hub hub jupyterhub/ -f minikube-config.yaml
+   helm upgrade --install --namespace=jhub jhub jupyterhub/ --values minikube-config.yaml
    ```
 
    You can easily change the options in `minikube-config.yaml` file to test what
    you want, or create another `config.yaml` file & pass that as an additional
    `-f config.yaml` file to the `helm upgrade` command.
 
-10. Retrieve the URL for your instance of JupyterHub:
+1. Retrieve the URL for your instance of JupyterHub:
 
    ```bash
    minikube service --namespace=hub proxy-public
