@@ -24,19 +24,11 @@ Welcome! As a [Jupyter](https://jupyter.org) project, we follow the [Jupyter con
    python3 -m pip install -r dev-requirements.txt
    ```
 
-1. Now run `chartpress` to build the requisite docker images:
-    ```bash
-    chartpress
-    ```
-
-    This will build the docker images & modify `jupyterhub/values.yaml` with the
-    appropriate values to make the chart installable!
-
 1. Start a local Kubernetes cluster with `kind`
 
    ```bash
    kind cluster create
-   export KUBECONFIG=”$(kind get kubeconfig-path)”
+   export KUBECONFIG="$(kind get kubeconfig-path)"
    ```
 
 1. Install what helm needs to work with your cluster, tiller:
@@ -51,6 +43,14 @@ Welcome! As a [Jupyter](https://jupyter.org) project, we follow the [Jupyter con
    # Install tiller
    helm init --service-account tiller
    ```
+
+1. Now run `chartpress` to build the requisite docker images:
+    ```bash
+    chartpress
+    ```
+
+    This will build the docker images & modify `jupyterhub/values.yaml` with the
+    appropriate values to make the chart installable!
 
 1. Install / Upgrade the JupyterHub Helm chart!
    ```bash
