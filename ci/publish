@@ -18,7 +18,7 @@ export GIT_SSH_COMMAND="ssh -i ${PWD}/ci/id_rsa"
 
 if [ "${TRAVIS_TAG:-}" == "" ]; then
     # Using --long, we are ensured to get a build suffix, which ensures we don't
-    # build the same tag twice.
+    # build the same image tag and chart version twice.
     chartpress --push --publish-chart --long
 else
     # Setting a tag explicitly enforces a rebuild if this tag had already been
