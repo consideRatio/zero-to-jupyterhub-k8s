@@ -74,8 +74,8 @@ for trait, cfg_key in (
         cfg_key = camelCaseify(trait)
     set_config_if_not_none(c.JupyterHub, trait, 'hub.' + cfg_key)
 
-c.JupyterHub.ip = os.environ['PROXY_PUBLIC_SERVICE_HOST']
-c.JupyterHub.port = int(os.environ['PROXY_PUBLIC_SERVICE_PORT'])
+c.JupyterHub.ip = os.environ.get('PROXY_HTTP_SERVICE_HOST', os.environ['PROXY_PUBLIC_SERVICE_HOST'])
+c.JupyterHub.port = int(os.environ.get('PROXY_HTTP_SERVICE_PORT', os.environ['PROXY_PUBLIC_SERVICE_PORT']))
 
 # the hub should listen on all interfaces, so the proxy can access it
 c.JupyterHub.hub_ip = '0.0.0.0'
