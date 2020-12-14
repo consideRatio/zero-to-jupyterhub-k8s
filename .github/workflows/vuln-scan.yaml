@@ -73,92 +73,117 @@ jobs:
           echo "Image identified: $IMAGE"
 
       # Action reference: https://github.com/aquasecurity/trivy-action
-      - name: Run Trivy vulnerability scanner
-        id: scan
+      - name: Scan published image
+        id: scan_published_image
         uses: aquasecurity/trivy-action@master
         with:
           # image-ref: ${{ steps.image.outputs.image }}
           # FIXME: I hardcoded this to be 0.10.6 as I modified the Dockerfile's
           #        in this PR which shouldn't happen in practice.
           image-ref: jupyterhub/k8s-${{ matrix.image_ref }}:0.10.6
-          format: json
-          exit-code: '1'
+          format: json  # ref: https://github.com/aquasecurity/trivy#save-the-results-as-json
+          output: tmp/scan_published_image.json
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
+          exit-code: '1'
         # Keep running the subsequent steps of the job, they are made to
         # explicitly adjust based on this step's outcome.
         continue-on-error: true
 
-      # Rebuild image
+      # Steps below is only executing if vulnerabilities have been detected.
+      # -----------------------------------------------------------------------
+
       - name: Rebuild image
         id: rebuild
-        if: steps.scan.outcome == 'failure'
+        if: steps.scan_published_image.outcome == 'failure'
         run: |
           docker build -t rebuilt-image images/${{ matrix.image_ref }}
 
-      # Scan rebuilt image
-      - name: Run Trivy vulnerability scanner again
+      - name: Scan rebuilt image
+        id: scan_rebuilt_image
         if: steps.rebuild.outcome == 'success'
-        id: scan_again
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: rebuilt-image
-          format: json
-          exit-code: '1'
+          format: json  # ref: https://github.com/aquasecurity/trivy#save-the-results-as-json
+          output: tmp/scan_rebuilt_image.json
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
-        # Keep running the subsequent steps of the job, they are made to
-        # explicitly adjust based on this step's outcome.
-        continue-on-error: true
-
-      # Case 1: rebuilt image scan fail -> fail job unless accept_failure
-      - name: "Rebuild -> Scan conclusion: failure"
-        if: steps.scan_again.outcome == 'failure'
-        run: |
-          echo "A rebuild hasn't solved the problem, and a manual patch required at the moment."
-          exit 1
-        # Don't let the job fail if we accept_failure. Note that the subsequent
-        # steps will not run unless steps.scan_again.outcome == 'success'.
-        continue-on-error: ${{ matrix.accept_failure }}
-
-      # Case 2: rebuilt image scan succeeds -> create and submit a PR and output a GitHub annotation -> fail job
-      - name: "Rebuild -> scan conclusion: success"
-        if: steps.scan_again.outcome == 'success'
-        run: |
-          echo "A rebuild patched all known vulnerabilities! Now we just have to trigger a rebuild!"
 
       # Create a PR only if we have reduced the known vulnerabilities between
-      # scan and scan_again. Update a PR only if we have reduced the known
-      # vulnerabilities between scan and scan_again in a new way than before.
+      # scan_published_image and scan_rebuilt_image. Update a PR only if we have reduced the
+      # known vulnerabilities between scan_published_image and scan_rebuilt_image in a new way
+      # than before.
       #
-      # TODO:
-      # - Stash vuln logs
-      # - Compare vulns, and if they differ, generate a VULN_SCAN_HASH and proceed
-      #
-      - name: "Prepare a VULN_SCAN_HASH"
-        if: steps.scan_again.outcome == 'success'
+      - name: Compare scan reports
+        id: compare
+        if: steps.rebuild.outcome == 'success'
         run: |
-          echo "FIXME: make a small modification, commit, and create a PR"
+          json_report_to_md() {
+              echo "Target | Vuln. ID | Package Name | Installed v. | Fixed v." >> $2
+              echo "-|-|-|-|-" >> $2
+              cat "$1" | jq -r '.[] | .Type + " | " + (.Vulnerabilities[] | .VulnerabilityID + " | " + .PkgName + " | " + .InstalledVersion + " | " + .FixedVersion)' | sort >> $2
+          }
+
+          json_report_to_md tmp/scan_published_image.json tmp/1.md
+          json_report_to_md tmp/scan_rebuilt_image.json tmp/2.md
+
+          HASH1=$(cat tmp/1.md | sha1sum)
+          HASH2=$(cat tmp/2.md | sha1sum)
+
+          # Did rebuilding the image change anything?
+          if [ "$HASH1" == "$HASH2" ]; then
+              echo "::set-output name=proceed::no"
+              echo "A image rebuild didn't patch any vulnerabilities, manual intervention required at this point."
+              exit 1
+          else
+              echo "::set-output name=proceed::yes"
+              echo "::set-output name=hash::$HASH2"
+              echo "A rebuild has made a difference!"
+              echo ""
+              git --no-pager diff --no-index --color=always tmp/1.md tmp/2.md
+
+              echo "```diff" > tmp/diff.md
+              git --no-pager diff --no-index --color=no     tmp/1.md tmp/2.md | tail -n 6 >> tmp/diff.md
+              echo "```"
+          fi
+
+      # Steps below are executed if the compare step decided to proceed.
+      # -----------------------------------------------------------------------
 
       # ref: https://github.com/jacobtomlinson/gha-find-replace
       - name: Update VULN_SCAN_HASH in Dockerfile
-        if: steps.scan_again.outcome == 'success'
+        if: steps.compare.outputs.proceed == 'yes'
         uses: jacobtomlinson/gha-find-replace@0.1.2
         with:
           include: "${{ matrix.image_dir }}/Dockerfile"
-          find: ".*VULN_SCAN_HASH=.*"
-          replace: "# VULN_SCAN_HASH=hardcoded-stuff"
+          find: "#.*VULN_SCAN_HASH=.*"
+          replace: "# VULN_SCAN_HASH=${{ steps.compare.outputs.hash }}"
 
+      # The create-pull-request action is smart enough to only create/update a
+      # PR if there is a change to anything not .gitignored. A change will be
+      # made only if the compare steps outputted hash is changed.
+      #
       # ref: https://github.com/peter-evans/create-pull-request
       - name: Create or update a PR
-        if: steps.scan_again.outcome == 'success'
+        if: steps.compare.outputs.proceed == 'yes'
         uses: peter-evans/create-pull-request@v3
         with:
           token: "${{ secrets.GITHUB_TOKEN }}"
           reviewers: "consideratio"
           branch: "vuln-scan-${{ matrix.image_ref }}"
-          title: "Patch known vulnerability in ${{ matrix.image_ref }}"
+          title: "Vulnerability patch in ${{ matrix.image_ref }}"
           body: |
-            Known vulnerabilities has been detected in the ${{ matrix.image_ref }} image but have been patched by simply rebuilding the image.
+            Triggers an image rebuild to patch known vulnerabilities in the ${{ matrix.image_ref }} image.
+
+            TODO: show tmp/2.md
+            TODO: show tmp/diff.md
           commit-message: |
             Patch known vulnerability in ${{ matrix.image_ref }}
+
+      - name: echo stuff...
+        if: steps.compare.outputs.proceed == 'yes'
+        run: |
+          cat tmp/2.md
+          echo ---
+          cat tmp/diff.md
