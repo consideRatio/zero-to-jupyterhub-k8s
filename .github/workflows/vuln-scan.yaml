@@ -78,7 +78,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ steps.image.outputs.image }}
-          format: table
+          format: json
           exit-code: '1'
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
@@ -100,7 +100,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: rebuilt-image
-          format: table
+          format: json
           exit-code: '1'
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
@@ -124,19 +124,27 @@ jobs:
         run: |
           echo "A rebuild patched all known vulnerabilities! Now we just have to trigger a rebuild!"
 
-      - name: "Dummy update Dockerfile to trigger a rebuild"
+      # Create a PR only if we have reduced the known vulnerabilities between
+      # scan and scan_again. Update a PR only if we have reduced the known
+      # vulnerabilities between scan and scan_again in a new way than before.
+      #
+      # TODO:
+      # - Stash vuln logs
+      # - Compare vulns, and if they differ, generate a VULN_SCAN_HASH and proceed
+      #
+      - name: "Prepare a VULN_SCAN_HASH"
         if: steps.scan_again.outcome == 'success'
         run: |
           echo "FIXME: make a small modification, commit, and create a PR"
 
       # ref: https://github.com/jacobtomlinson/gha-find-replace
-      - name: Update REBUILD_DATETIME in Dockerfile
+      - name: Update VULN_SCAN_HASH in Dockerfile
         if: steps.scan_again.outcome == 'success'
         uses: jacobtomlinson/gha-find-replace@0.1.2
         with:
           include: "${{ matrix.image_dir }}/Dockerfile"
-          find: ".*REBUILD_DATETIME=.*"
-          replace: "# REBUILD_DATETIME=hardcoded-stuff"
+          find: ".*VULN_SCAN_HASH=.*"
+          replace: "# VULN_SCAN_HASH=hardcoded-stuff"
 
       # ref: https://github.com/peter-evans/create-pull-request
       - name: Create or update a PR
