@@ -126,10 +126,7 @@ jobs:
           json_report_to_md() {
               echo "Target | Vuln. ID | Package Name | Installed v. | Fixed v." > $2
               echo "-|-|-|-|-" >> $2
-
-              if [ -s $1 ]; then
-                  cat "$1" | jq -r '.[] | .Type + " | " + (.Vulnerabilities[] | .VulnerabilityID + " | " + .PkgName + " | " + .InstalledVersion + " | " + .FixedVersion)' | sort >> $2
-              fi
+              cat "$1" | jq -r '.[] | select(.Vulnerabilities != null) | .Type + " | " + (.Vulnerabilities[] | .VulnerabilityID + " | " + .PkgName + " | " + .InstalledVersion + " | " + .FixedVersion)' | sort >> $2
           }
 
           json_report_to_md tmp/scan_published_image.json tmp/1.md
@@ -141,19 +138,20 @@ jobs:
           # Did rebuilding the image change anything?
           if [ "$HASH1" == "$HASH2" ]; then
               echo "::set-output name=proceed::no"
-              echo "A image rebuild didn't patch any vulnerabilities, manual intervention required at this point."
+              echo "No vulnerabilities got patched by rebuilding the image :("
+              echo ""
+              cat tmp/1.md
               exit 1
           else
               echo "::set-output name=proceed::yes"
               echo "::set-output name=hash::$HASH2"
-              echo "A rebuild made a difference!"
+              echo "Vulnerabilities were patched by rebuilding the image!"
               echo ""
-              git --no-pager diff --no-index --color=always tmp/1.md tmp/2.md
+              git --no-pager diff --no-index --color=always tmp/1.md tmp/2.md | tail -n 6
 
-              # save diff to tmp/diff.md
               echo "```diff" > tmp/diff.md
               git --no-pager diff --no-index --color=no     tmp/1.md tmp/2.md | tail -n 6 >> tmp/diff.md
-              echo "```"
+              echo "```" >> tmp/diff.md
           fi
 
       # Steps below are executed if the compare step decided to proceed.
