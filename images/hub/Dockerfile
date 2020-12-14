@@ -1,5 +1,9 @@
 FROM ubuntu:20.04
 
+# The date below is automatically updated by the vulnerability scan GitHub
+# Workflow to see if a rebuild would patch known vulnerabilities. The following
+# command is used: date --utc +"%y%m%d-%H:%M:%S"
+# REBUILD_DATE=201214-10:46:04
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8
@@ -38,7 +42,7 @@ COPY requirements.txt /tmp/requirements.txt
 
 # NOTE: This is a default and will be overridden by chartpress and the
 #       dependencies script using the chartpress.yaml configuration's buildArgs
-ARG JUPYTERHUB_VERSION=1.1.*
+ARG JUPYTERHUB_VERSION=1.2.2
 
 RUN PYCURL_SSL_LIBRARY=openssl pip3 install --no-cache-dir \
          -r /tmp/requirements.txt \
