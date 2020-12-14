@@ -77,7 +77,10 @@ jobs:
         id: scan
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ steps.image.outputs.image }}
+          # image-ref: ${{ steps.image.outputs.image }}
+          # FIXME: I hardcoded this to be 0.10.6 as I modified the Dockerfile's
+          #        in this PR which shouldn't happen in practice.
+          image-ref: jupyterhub/k8s-${{ matrix.image_ref }}:0.10.6
           format: json
           exit-code: '1'
           ignore-unfixed: true
