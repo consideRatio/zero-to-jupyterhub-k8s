@@ -30,11 +30,20 @@ jobs:
       matrix:
         include:
           - image_ref: hub
+            image_dir: images/hub
+            accept_failure: false
           - image_ref: secret-sync
+            image_dir: images/secret-sync
+            accept_failure: false
           - image_ref: network-tools
+            image_dir: images/network-tools
+            accept_failure: false
           - image_ref: image-awaiter
+            image_dir: images/image-awaiter
+            accept_failure: false
           - image_ref: singleuser-sample
-            accept_trivy_failure: true
+            image_dir: images/singleuser-sample
+            accept_failure: true
 
     steps:
       - uses: actions/checkout@v2
@@ -81,7 +90,7 @@ jobs:
         id: rebuild
         if: steps.scan.outcome == 'failure'
         run: |
-          docker build -t ${{ steps.image.outputs.name }}:rebuilt images/${{ matrix.image_ref }}
+          docker build -t rebuilt-image images/${{ matrix.image_ref }}
 
       # Scan rebuilt image
       - name: Run Trivy vulnerability scanner again
@@ -89,7 +98,7 @@ jobs:
         id: scan_again
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ steps.image.outputs.name }}:rebuilt
+          image-ref: rebuilt-image
           format: table
           exit-code: '1'
           ignore-unfixed: true
@@ -98,12 +107,15 @@ jobs:
         # explicitly adjust based on this step's outcome.
         continue-on-error: true
 
-      # Case 1: rebuilt image scan fail -> fail job unless accept_trivy_failure
+      # Case 1: rebuilt image scan fail -> fail job unless accept_failure
       - name: "Rebuild -> Scan conclusion: failure"
         if: steps.scan_again.outcome == 'failure'
         run: |
           echo "A rebuild hasn't solved the problem, and a manual patch required at the moment."
           exit 1
+        # Don't let the job fail if we accept_failure. Note that the subsequent
+        # steps will not run unless steps.scan_again.outcome == 'success'.
+        continue-on-error: ${{ matrix.accept_failure }}
 
       # Case 2: rebuilt image scan succeeds -> create and submit a PR and output a GitHub annotation -> fail job
       - name: "Rebuild -> scan conclusion: success"
@@ -115,3 +127,26 @@ jobs:
         if: steps.scan_again.outcome == 'success'
         run: |
           echo "FIXME: make a small modification, commit, and create a PR"
+
+      # ref: https://github.com/jacobtomlinson/gha-find-replace
+      - name: Update REBUILD_DATETIME in Dockerfile
+        if: steps.scan_again.outcome == 'success'
+        uses: jacobtomlinson/gha-find-replace@0.1.2
+        with:
+          include: "${{ matrix.image_dir }}/Dockerfile"
+          find: ".*REBUILD_DATETIME=.*"
+          replace: "# REBUILD_DATETIME=hardcoded-stuff"
+
+      # ref: https://github.com/peter-evans/create-pull-request
+      - name: Create or update a PR
+        if: steps.scan_again.outcome == 'success'
+        uses: peter-evans/create-pull-request@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          reviewers: "consideratio"
+          branch: "patch-known-vuln-in-${{ matrix.image_ref }}"
+          title: "Patch known vulnerability in ${{ matrix.image_ref }}"
+          body: |
+            Known vulnerabilities has been detected in the ${{ matrix.image_ref }} image but have been patched by simply rebuilding the image.
+          commit-message: |
+            Patch known vulnerability in ${{ matrix.image_ref }}

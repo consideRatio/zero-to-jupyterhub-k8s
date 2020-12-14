@@ -3,7 +3,7 @@ FROM ubuntu:20.04
 # The date below is automatically updated by the vulnerability scan GitHub
 # Workflow to see if a rebuild would patch known vulnerabilities. The following
 # command is used: date --utc +"%y%m%d-%H:%M:%S"
-# REBUILD_DATE=201214-10:46:04
+# REBUILD_DATETIME=201214-10:46:04
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8
