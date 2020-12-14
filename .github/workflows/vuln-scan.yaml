@@ -65,6 +65,7 @@ jobs:
 
       # Action reference: https://github.com/aquasecurity/trivy-action
       - name: Run Trivy vulnerability scanner
+        id: scan
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ steps.image.outputs.image }}
@@ -72,7 +73,46 @@ jobs:
           exit-code: '1'
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
-        # Make the job not fail if this step fails and we accept_trivy failure.
-        # If we continue-on-error, the GitHub UI signal the job to be green, but
-        # report a warning as an annotation about it.
-        continue-on-error: ${{ matrix.accept_trivy_failure == true }}
+        # Keep running the subsequent steps of the job, they are made to
+        # explicitly adjust based on this step's outcome.
+        continue-on-error: true
+
+      # Rebuild image
+      - name: Rebuild image
+        id: rebuild
+        if: steps.scan.outcome == 'failure'
+        run: |
+          docker build -t ${{ steps.image.outputs.name }}:rebuilt images/${{ matrix.image_ref }}
+
+      # Scan rebuilt image
+      - name: Run Trivy vulnerability scanner again
+        if: steps.rebuild.outcome == 'success'
+        id: scan_again
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.image.outputs.name }}:rebuilt
+          format: table
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+        # Keep running the subsequent steps of the job, they are made to
+        # explicitly adjust based on this step's outcome.
+        continue-on-error: true
+
+      # Case 1: rebuilt image scan fail -> fail job unless accept_trivy_failure
+      - name: "Rebuild -> Scan conclusion: failure"
+        if: steps.scan_again.outcome == 'failure'
+        run: |
+          echo "A rebuild hasn't solved the problem, and a manual patch required at the moment."
+          exit 1
+
+      # Case 2: rebuilt image scan succeeds -> create and submit a PR and output a GitHub annotation -> fail job
+      - name: "Rebuild -> scan conclusion: success"
+        if: steps.scan_again.outcome == 'success'
+        run: |
+          echo "A rebuild patched all known vulnerabilities! Now we just have to trigger a rebuild!"
+
+      - name: "Dummy update Dockerfile to trigger a rebuild"
+        if: steps.scan_again.outcome == 'success'
+        run: |
+          echo "FIXME: make a small modification, commit, and create a PR"
