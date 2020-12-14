@@ -59,6 +59,9 @@ jobs:
         run: |
           pip install chartpress
 
+      - name: Create ./tmp dir
+          mkdir ./tmp
+
       # charpress --list-images output lines of name:tag format. We use it with
       # a search string in matrix.image_ref to find the specific image to scan
       # in this job.
