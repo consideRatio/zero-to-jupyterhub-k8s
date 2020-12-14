@@ -6,7 +6,8 @@ name: Publish
 # Trigger the workflow's on pushed tags or commits to main/master branch.
 on:
   push:
-    branches: ["main", "master"]
+    # FIXME: commented out during PR development
+    # branches: ["main", "master"]
     tags: ["[0-9]+.[0-9]+.[0-9]+*"]
 
 defaults:
