@@ -60,6 +60,7 @@ jobs:
           pip install chartpress
 
       - name: Create ./tmp dir
+        run: |
           mkdir ./tmp
 
       # charpress --list-images output lines of name:tag format. We use it with
