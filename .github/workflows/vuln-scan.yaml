@@ -13,6 +13,9 @@ on:
     # At 00:00 - https://crontab.guru
     - cron: "0 0 * * *"
   workflow_dispatch:
+  # FIXME: push added for development of the pr
+  push:
+    branch: master
 
 defaults:
   run:
@@ -20,6 +23,7 @@ defaults:
 
 jobs:
   trivy_image_scan:
+    if: github.repository == 'consideratio/zero-to-jupyterhub-k8s'
     runs-on: ubuntu-20.04
 
     strategy:

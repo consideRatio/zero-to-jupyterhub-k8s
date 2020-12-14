@@ -6,8 +6,9 @@ name: Test
 # Trigger the workflow's on all PRs and pushes so that other contributors can
 # run tests in their own forks.
 on:
-  pull_request:
-  push:
+  # FIXME: commented out during PR development
+  # pull_request:
+  # push:
   workflow_dispatch:
 
 defaults:
