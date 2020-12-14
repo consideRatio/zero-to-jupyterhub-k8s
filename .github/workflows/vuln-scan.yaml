@@ -51,17 +51,15 @@ jobs:
         with:
           # chartpress requires the full history
           fetch-depth: 0
-      - uses: actions/setup-python@v2
-        with:
-          python-version: '3.8'
-
-      - name: Install chartpress
-        run: |
-          pip install chartpress
-
       - name: Create ./tmp dir
         run: |
           mkdir ./tmp
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - name: Install chartpress
+        run: |
+          pip install chartpress
 
       # charpress --list-images output lines of name:tag format. We use it with
       # a search string in matrix.image_ref to find the specific image to scan
@@ -69,24 +67,27 @@ jobs:
       - name: Identify image name:tag
         id: image
         run: |
-          IMAGE=$(
+          IMAGE_SPEC=$(
               chartpress --list-images \
             | grep ${{ matrix.image_ref }}:
           )
-          echo "::set-output name=image::$IMAGE"
-          echo "Image identified: $IMAGE"
+          echo "Identified image: $IMAGE_SPEC"
+
+          echo "::set-output name=spec::$IMAGE_SPEC"
+          echo "::set-output name=name::$(echo $IMAGE_SPEC | sed 's/\(.*\):.*/\1/')"
+          echo "::set-output name=tag::$(echo $IMAGE_SPEC | sed 's/.*:\(.*\)/\1/')"
 
       # Action reference: https://github.com/aquasecurity/trivy-action
-      - name: Scan published image
-        id: scan_published_image
+      - name: Scan latest published image
+        id: scan_1
         uses: aquasecurity/trivy-action@master
         with:
-          # image-ref: ${{ steps.image.outputs.image }}
+          # image-ref: ${{ steps.image.outputs.spec }}
           # FIXME: I hardcoded this to be 0.10.6 as I modified the Dockerfile's
           #        in this PR which shouldn't happen in practice.
           image-ref: jupyterhub/k8s-${{ matrix.image_ref }}:0.10.6
           format: json  # ref: https://github.com/aquasecurity/trivy#save-the-results-as-json
-          output: tmp/scan_published_image.json
+          output: tmp/scan_1.json
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
@@ -99,80 +100,105 @@ jobs:
 
       - name: Rebuild image
         id: rebuild
-        if: steps.scan_published_image.outcome == 'failure'
+        if: steps.scan_1.outcome == 'failure'
         run: |
           docker build -t rebuilt-image images/${{ matrix.image_ref }}
 
       - name: Scan rebuilt image
-        id: scan_rebuilt_image
+        id: scan_2
         if: steps.rebuild.outcome == 'success'
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: rebuilt-image
           format: json  # ref: https://github.com/aquasecurity/trivy#save-the-results-as-json
-          output: tmp/scan_rebuilt_image.json
+          output: tmp/scan_2.json
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
 
-      # Create a PR only if we have reduced the known vulnerabilities between
-      # scan_published_image and scan_rebuilt_image. Update a PR only if we have reduced the
-      # known vulnerabilities between scan_published_image and scan_rebuilt_image in a new way
-      # than before.
-      #
-      - name: Compare scan reports
-        id: compare
+      # Analyze the scan reports. If they differ, we want to proceed and create
+      # or update a PR. We use a hash from the final scan report as an
+      # indication to rebuild or not.
+      - name: Analyze scan reports
+        id: analyze
         if: steps.rebuild.outcome == 'success'
         run: |
-          json_report_to_md() {
-              echo "Target | Vuln. ID | Package Name | Installed v. | Fixed v." > $2
-              echo "-|-|-|-|-" >> $2
-              cat "$1" | jq -r '.[] | select(.Vulnerabilities != null) | .Type + " | " + (.Vulnerabilities[] | .VulnerabilityID + " | " + .PkgName + " | " + .InstalledVersion + " | " + .FixedVersion)' | sort >> $2
+          json_to_misc() {
+              # Count vulnerabilities
+              VULNERABILITY_COUNT=$(cat tmp/scan_$1.json | jq -r '.[].Vulnerabilities | select(. != null) | length')
+              VULNERABILITY_COUNT=${VULNERABILITY_COUNT:-0}
+              echo "VULNERABILITY_COUNT_$1=$VULNERABILITY_COUNT" >> $GITHUB_ENV
+
+              # Construct a markdown summary
+              if [[ "$VULNERABILITY_COUNT" == "0" ]]; then
+                  echo "No vulnerabilities! :tada:" >> tmp/md_summary_$1.md
+              else
+                  echo "Target | Vuln. ID | Package Name | Installed v. | Fixed v." >> tmp/md_summary_$1.md
+                  echo "-|-|-|-|-" >> tmp/md_summary_$1.md
+                  cat tmp/scan_$1.json | jq -r '.[] | select(.Vulnerabilities != null) | .Type + " | " + (.Vulnerabilities[] | .VulnerabilityID + " | " + .PkgName + " | " + .InstalledVersion + " | " + .FixedVersion)' | sort >> tmp/md_summary_$1.md
+              fi
+
+              # Use hack to set a multiline string output
+              # ref: https://github.com/actions/toolkit/issues/403#issue-593398879
+              TMP=$(cat tmp/md_summary_$1.md)
+              TMP="${TMP//'%'/'%25'}"
+              TMP="${TMP//$'\n'/'%0A'}"
+              TMP="${TMP//$'\r'/'%0D'}"
+              echo "::set-output name=md_summary_$1::$TMP"
+
+              # Calculate a hash of the markdown summary
+              HASH=$(cat tmp/md_summary_$1.md | sha1sum)
+              HASH=${HASH:0:10}
+              export HASH_$1=$HASH
+              echo "::set-output name=hash_$1::$HASH"
           }
 
-          json_report_to_md tmp/scan_published_image.json tmp/1.md
-          json_report_to_md tmp/scan_rebuilt_image.json tmp/2.md
-
-          HASH1=$(cat tmp/1.md | sha1sum)
-          HASH2=$(cat tmp/2.md | sha1sum)
+          json_to_misc 1
+          json_to_misc 2
 
           # Did rebuilding the image change anything?
-          if [ "$HASH1" == "$HASH2" ]; then
+          if [ "$HASH_1" == "$HASH_2" ]; then
               echo "::set-output name=proceed::no"
-              echo "No vulnerabilities got patched by rebuilding the image :("
-              echo ""
-              cat tmp/1.md
-              exit 1
+              echo "No vulnerabilities were patched by rebuilding the image - won't proceed!"
           else
               echo "::set-output name=proceed::yes"
-              echo "::set-output name=hash::$HASH2"
-              echo "Vulnerabilities were patched by rebuilding the image!"
-              echo ""
-              git --no-pager diff --no-index --color=always tmp/1.md tmp/2.md | tail -n 6
-
-              echo "```diff" > tmp/diff.md
-              git --no-pager diff --no-index --color=no     tmp/1.md tmp/2.md | tail -n 6 >> tmp/diff.md
-              echo "```" >> tmp/diff.md
+              echo "Vulnerabilities were patched by rebuilding the image - will proceed!"
           fi
 
-      # Steps below are executed if the compare step decided to proceed.
+      - name: Describe vulnerabilities
+        if: steps.rebuild.outcome == 'success'
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: rebuilt-image
+          format: table
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+
+      - name: Decision to not proceed
+        if: steps.analyze.outputs.proceed == 'no'
+        run: |
+          echo "None of the $VULNERABILITY_COUNT_1 vulnerabilities got patched by rebuilding the image :("
+          exit 1
+        continue-on-error: ${{ matrix.accept_failure == true }}
+
+      # Steps below are executed if the analyze step decided to proceed.
       # -----------------------------------------------------------------------
 
       # ref: https://github.com/jacobtomlinson/gha-find-replace
       - name: Update VULN_SCAN_HASH in Dockerfile
-        if: steps.compare.outputs.proceed == 'yes'
+        if: steps.analyze.outputs.proceed == 'yes'
         uses: jacobtomlinson/gha-find-replace@0.1.2
         with:
           include: "${{ matrix.image_dir }}/Dockerfile"
           find: "#.*VULN_SCAN_HASH=.*"
-          replace: "# VULN_SCAN_HASH=${{ steps.compare.outputs.hash }}"
+          replace: "# VULN_SCAN_HASH=${{ steps.analyze.outputs.hash_2 }}"
 
       # The create-pull-request action is smart enough to only create/update a
       # PR if there is a change to anything not .gitignored. A change will be
-      # made only if the compare steps outputted hash is changed.
+      # made only if the analyze steps outputted hash is changed.
       #
       # ref: https://github.com/peter-evans/create-pull-request
       - name: Create or update a PR
-        if: steps.compare.outputs.proceed == 'yes'
+        if: steps.analyze.outputs.proceed == 'yes'
         uses: peter-evans/create-pull-request@v3
         with:
           token: "${{ secrets.GITHUB_TOKEN }}"
@@ -180,16 +206,19 @@ jobs:
           branch: "vuln-scan-${{ matrix.image_ref }}"
           title: "Vulnerability patch in ${{ matrix.image_ref }}"
           body: |
-            Triggers an image rebuild to patch known vulnerabilities in the ${{ matrix.image_ref }} image.
+            A rebuild of `${{ steps.image.outputs.name }}` has been found to influence the detected vulnerabilities!
+            
+            ## About
+            This scan for known vulnerabilities has been made by [aquasecurity/trivy](https://github.com/aquasecurity/trivy). Trivy was configured to filter the vulnerabilities with the following settings:
+            - severity:       `CRITICAL,HIGH`
+            - ignore-unfixed: `true`
 
-            TODO: show tmp/2.md
-            TODO: show tmp/diff.md
+            ## Before
+            Before trying to rebuild the image, the following vulnerabilities was detected in `${{ steps.image.outputs.spec }}`.
+
+            ${{ steps.analyze.outputs.md_summary_1 }}
+
+            ## After
+            ${{ steps.analyze.outputs.md_summary_2 }}
           commit-message: |
             Patch known vulnerability in ${{ matrix.image_ref }}
-
-      - name: echo stuff...
-        if: steps.compare.outputs.proceed == 'yes'
-        run: |
-          cat tmp/2.md
-          echo ---
-          cat tmp/diff.md
