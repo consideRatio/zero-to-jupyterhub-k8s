@@ -23,7 +23,7 @@ defaults:
 
 jobs:
   trivy_image_scan:
-    if: github.repository == 'consideratio/zero-to-jupyterhub-k8s'
+    # if: github.repository == 'consideratio/zero-to-jupyterhub-k8s'
     runs-on: ubuntu-20.04
 
     strategy:
