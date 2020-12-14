@@ -124,9 +124,12 @@ jobs:
         if: steps.rebuild.outcome == 'success'
         run: |
           json_report_to_md() {
-              echo "Target | Vuln. ID | Package Name | Installed v. | Fixed v." >> $2
+              echo "Target | Vuln. ID | Package Name | Installed v. | Fixed v." > $2
               echo "-|-|-|-|-" >> $2
-              cat "$1" | jq -r '.[] | .Type + " | " + (.Vulnerabilities[] | .VulnerabilityID + " | " + .PkgName + " | " + .InstalledVersion + " | " + .FixedVersion)' | sort >> $2
+
+              if [ -s $1 ]; then
+                  cat "$1" | jq -r '.[] | .Type + " | " + (.Vulnerabilities[] | .VulnerabilityID + " | " + .PkgName + " | " + .InstalledVersion + " | " + .FixedVersion)' | sort >> $2
+              fi
           }
 
           json_report_to_md tmp/scan_published_image.json tmp/1.md
@@ -143,10 +146,11 @@ jobs:
           else
               echo "::set-output name=proceed::yes"
               echo "::set-output name=hash::$HASH2"
-              echo "A rebuild has made a difference!"
+              echo "A rebuild made a difference!"
               echo ""
               git --no-pager diff --no-index --color=always tmp/1.md tmp/2.md
 
+              # save diff to tmp/diff.md
               echo "```diff" > tmp/diff.md
               git --no-pager diff --no-index --color=no     tmp/1.md tmp/2.md | tail -n 6 >> tmp/diff.md
               echo "```"
