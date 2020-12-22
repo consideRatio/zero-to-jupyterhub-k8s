@@ -18,7 +18,7 @@ updates:
     directory: "/images/singleuser-sample"
     schedule:
       interval: daily
-      time: "15:20"
+      time: "15:35"
       timezone: "Etc/UTC"
     labels:
       - maintenance
