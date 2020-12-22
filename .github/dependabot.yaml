@@ -6,7 +6,7 @@ updates:
     directory: "/images/hub"
     schedule: &schedule
       interval: daily
-      time: "00:00"
+      time: "12:45"
       timezone: "Etc/UTC"
     versioning-strategy: lockfile-only
     labels:
