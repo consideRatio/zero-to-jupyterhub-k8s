@@ -23,7 +23,10 @@ jobs:
           echo "GITHUB_TOKEN: $GITHUB_TOKEN"
           echo "env.GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}"
           echo "PASSED_GITHUB_ACTOR: $PASSED_GITHUB_ACTOR"
+
+          echo "x" >> test.file
+          git commit --author="Test User <erik@sundellopensource.se>" -am "dummy commit x"
+
           git push https://asdfdf@github.com/consideratio/zero-to-jupyterhub-k8s/
-          git push https://wrongasdf@github.com/consideratio/zero-to-jupyterhub-k8s/
         env:
           PASSED_GITHUB_ACTOR: "${{ env.GITHUB_ACTOR }}:${{ secrets.GITHUB_TOKEN }}"
