@@ -16,6 +16,21 @@ repos:
     hooks:
       - id: beautysh
 
+  # Markdown formatting
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0.5.5
+    hooks:
+      - id: mdformat
+        additional_dependencies:
+          # Autoformat nested Python code: https://github.com/hukkinj1/mdformat-black
+          - mdformat-black
+
+          # Autoformat nested json/yaml/toml: https://github.com/hukkinj1/mdformat-config
+          - mdformat-config
+
+          # Tolerate GitHub flavored markdown: https://github.com/hukkinj1/mdformat-gfm
+          - mdformat-gfm
+
   # Reset changes by chartpress
   - repo: local
     hooks:
