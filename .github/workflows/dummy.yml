@@ -28,7 +28,8 @@ jobs:
           git config --global user.name "Erik Sundell"
 
           echo "x" >> test.file
-          git commit -am "dummy commit x"
+          git add test.file
+          git commit -m "dummy commit x"
 
           git push https://asdfdf@github.com/consideratio/zero-to-jupyterhub-k8s/
         env:
