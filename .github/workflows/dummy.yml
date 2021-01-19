@@ -27,10 +27,24 @@ jobs:
           git config --global user.email "erik@sundellopensource.se"
           git config --global user.name "Erik Sundell"
 
-          echo "x" >> test.file
-          git add test.file
-          git commit -m "dummy commit x"
+          echo "1" >> test.file
+          git commit -am "dummy commit 1"
+          git push https://$GITHUB_ACTOR:$GITHUB_TOKEN@github.com/consideRatio/zero-to-jupyterhub-k8s.git master
 
-          git push https://$GITHUB_TOKEN@github.com/consideratio/zero-to-jupyterhub-k8s.git
+          echo "2" >> test.file
+          git commit -am "dummy commit 2"
+          git push https://$GITHUB_TOKEN@github.com/consideRatio/zero-to-jupyterhub-k8s.git master
+
+          echo "3" >> test.file
+          git commit -am "dummy commit 3"
+          git push https://github.com/consideRatio/zero-to-jupyterhub-k8s.git master
+
+          echo "4" >> test.file
+          git commit -am "dummy commit 4"
+          git push https://asdiufisdfkjwnewc@github.com/consideRatio/zero-to-jupyterhub-k8s.git master
+
+          echo "5" >> test.file
+          git commit -am "dummy commit 5"
+          git push origin master
         env:
           PASSED_GITHUB_ACTOR: "${{ env.GITHUB_ACTOR }}:${{ secrets.GITHUB_TOKEN }}"
