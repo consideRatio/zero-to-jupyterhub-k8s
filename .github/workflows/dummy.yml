@@ -24,12 +24,8 @@ jobs:
           echo "env.GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}"
           echo "PASSED_GITHUB_ACTOR: $PASSED_GITHUB_ACTOR"
 
-          git config --global user.email "erik@sundellopensource.se"
-          git config --global user.name "Erik Sundell"
-
-          echo "1" >> test.file
-          git commit -am "dummy commit 1"
-          git push https://$GITHUB_ACTOR:$GITHUB_TOKEN@github.com/consideRatio/zero-to-jupyterhub-k8s.git master
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           echo "2" >> test.file
           git commit -am "dummy commit 2"
