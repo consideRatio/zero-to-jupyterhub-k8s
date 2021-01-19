@@ -31,6 +31,6 @@ jobs:
           git add test.file
           git commit -m "dummy commit x"
 
-          git push https://asdfdf@github.com/consideratio/zero-to-jupyterhub-k8s/
+          git push https://$GITHUB_TOKEN@github.com/consideratio/zero-to-jupyterhub-k8s.git
         env:
           PASSED_GITHUB_ACTOR: "${{ env.GITHUB_ACTOR }}:${{ secrets.GITHUB_TOKEN }}"
