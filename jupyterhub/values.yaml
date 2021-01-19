@@ -80,8 +80,8 @@ hub:
   extraVolumeMounts: []
   image:
     name: jupyterhub/k8s-hub
-    tag: "quoted"
-    pullPolicy: ''
+    tag: '123'
+    pullPolicy: ""
     pullSecrets: []
   resources:
     requests:
@@ -273,7 +273,7 @@ proxy:
       allowPrivilegeEscalation: false
     image:
       name: jupyterhub/k8s-secret-sync
-      tag: unquoted
+      tag: '123'
       pullPolicy: ''
       pullSecrets: []
     resources: {}
@@ -314,7 +314,7 @@ singleuser:
   networkTools:
     image:
       name: jupyterhub/k8s-network-tools
-      tag: single-quoted
+      tag: '123'
       pullPolicy: ''
       pullSecrets: []
   cloudMetadata:
@@ -367,7 +367,7 @@ singleuser:
       storageAccessModes: [ReadWriteOnce]
   image:
     name: jupyterhub/k8s-singleuser-sample
-    tag: '0.11.1'
+    tag: '123'
     pullPolicy: ''
     pullSecrets: []
   startTimeout: 300
@@ -477,7 +477,7 @@ prePuller:
     # image and the configuration below relates to the hook-image-awaiter Job
     image:
       name: jupyterhub/k8s-image-awaiter
-      tag: '0.11.1'
+      tag: '123'
       pullPolicy: ''
       pullSecrets: []
     containerSecurityContext:

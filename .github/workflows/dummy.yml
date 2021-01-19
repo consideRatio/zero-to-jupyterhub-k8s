@@ -1,0 +1,26 @@
+# This is a GitHub workflow defining a set of jobs with a set of steps.
+# ref: https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions
+#
+name: Debugging
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          # chartpress requires the full history
+          fetch-depth: 0
+      
+      - name: debugging
+        run: |
+          echo "debugging purpose only..."
+          echo "GITHUB_ACTOR: $GITHUB_ACTOR"
+          echo "env.GITHUB_ACTOR: ${{ env.GITHUB_ACTOR }}"
+          echo "PASSED_GITHUB_ACTOR: $GITHUB_ACTOR"
+        env:
+          PASSED_GITHUB_ACTOR: ${{ env.GITHUB_ACTOR }}
