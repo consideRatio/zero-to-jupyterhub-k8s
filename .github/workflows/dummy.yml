@@ -23,6 +23,7 @@ jobs:
           echo "GITHUB_TOKEN: $GITHUB_TOKEN"
           echo "env.GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}"
           echo "PASSED_GITHUB_ACTOR: $PASSED_GITHUB_ACTOR"
-          git push https://$GITHUB_TOKEN@github.com/consideratio/zero-to-jupyterhub-k8s
+          git push https://$GITHUB_TOKEN@github.com/consideratio/zero-to-jupyterhub-k8s/
+          git push https://wrong$GITHUB_TOKEN@github.com/consideratio/zero-to-jupyterhub-k8s/
         env:
           PASSED_GITHUB_ACTOR: "${{ env.GITHUB_ACTOR }}:${{ secrets.GITHUB_TOKEN }}"
