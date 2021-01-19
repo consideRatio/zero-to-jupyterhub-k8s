@@ -21,6 +21,8 @@ jobs:
           echo "debugging purpose only..."
           echo "GITHUB_ACTOR: $GITHUB_ACTOR"
           echo "env.GITHUB_ACTOR: ${{ env.GITHUB_ACTOR }}"
-          echo "PASSED_GITHUB_ACTOR: $GITHUB_ACTOR"
+          echo "GITHUB_TOKEN: $GITHUB_TOKEN"
+          echo "env.GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}"
+          echo "PASSED_GITHUB_ACTOR: $PASSED_GITHUB_ACTOR"
         env:
-          PASSED_GITHUB_ACTOR: ${{ env.GITHUB_ACTOR }}
+          PASSED_GITHUB_ACTOR: "${{ env.GITHUB_ACTOR }}:${{ secrets.GITHUB_TOKEN }}"
