@@ -2,6 +2,7 @@ FROM python:3.8-alpine
 
 # VULN_SCAN_TIME=2021-04-16_00:02:04
 
+# DUMMY CHANGE
 # Note that we use tini-static, it embeds dependencies missing in alpine
 RUN ARCH=`uname -m`; \
     if [ "$ARCH" = x86_64 ]; then ARCH=amd64; fi; \
