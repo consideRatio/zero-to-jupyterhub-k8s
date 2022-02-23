@@ -169,7 +169,7 @@ prePuller:
 scheduling:
   userScheduler:
     enabled: true
-    replicas: 2
+    replicas: 1
     # Can be set too low too not show scoring of scheduled pods, but also too
     # high to show hex dumps of all network traffic.
     #

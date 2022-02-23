@@ -341,4 +341,4 @@ jobs:
         uses: jupyterhub/action-k8s-namespace-report@v1
         if: always()
         with:
-          important-workloads: deploy/hub deploy/proxy
+          important-workloads: deploy/user-scheduler deploy/hub deploy/proxy
