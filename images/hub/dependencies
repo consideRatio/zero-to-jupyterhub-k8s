@@ -118,7 +118,7 @@ def freeze(build, upgrade, upgrade_package):
             "run",
             "--rm",
             '--env=CUSTOM_COMPILE_COMMAND=./dependencies freeze --upgrade',
-            f"--volume={here}:/io:Z",
+            f"--volume={here}:/io:z",
             "--workdir=/io",
             dependencies_image,
             "pip-compile",
