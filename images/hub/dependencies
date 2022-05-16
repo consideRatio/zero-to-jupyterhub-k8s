@@ -116,6 +116,7 @@ def freeze(build, upgrade, upgrade_package):
         [
             "docker",
             "run",
+            "--user=root",
             "--rm",
             '--env=CUSTOM_COMPILE_COMMAND=./dependencies freeze --upgrade',
             f"--volume={here}:/io:z",
