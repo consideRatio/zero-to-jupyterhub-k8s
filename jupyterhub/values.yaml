@@ -1,4 +1,4 @@
-# fullnameOverride and nameOverride distinguishes blank strings, null values,
+
 # and non-blank strings. For more details, see the configuration reference.
 fullnameOverride: ""
 nameOverride:
