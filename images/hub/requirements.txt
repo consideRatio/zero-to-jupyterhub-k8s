@@ -93,7 +93,7 @@ jupyterhub-nativeauthenticator==1.0.5
     # via -r requirements.in
 jupyterhub-tmpauthenticator==0.6
     # via -r requirements.in
-jupyterhub==2.3.0
+jupyterhub==2.2.0
     # via
     #   -r requirements.in
     #   jupyterhub-firstuseauthenticator
