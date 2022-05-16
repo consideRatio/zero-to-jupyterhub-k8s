@@ -139,7 +139,7 @@ jobs:
       - name: Refreeze images/hub/requirements.txt based on images/hub/requirements.in
         if: steps.local.outputs.version != steps.latest.outputs.version
         run: |
-          su -c "setenforce 0"
+          sudo su -c "setenforce 0"
           images/hub/dependencies freeze --upgrade
 
       - name: git diff
