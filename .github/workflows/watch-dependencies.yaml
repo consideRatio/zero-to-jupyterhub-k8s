@@ -138,7 +138,10 @@ jobs:
 
       - name: Refreeze images/hub/requirements.txt based on images/hub/requirements.in
         if: steps.local.outputs.version != steps.latest.outputs.version
-        run: images/hub/dependencies freeze --upgrade
+        run: |
+          whoami
+          ls -alh images/hub
+          images/hub/dependencies freeze --upgrade
 
       - name: git diff
         if: steps.local.outputs.version != steps.latest.outputs.version
