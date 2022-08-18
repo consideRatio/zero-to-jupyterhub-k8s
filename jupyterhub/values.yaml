@@ -268,7 +268,7 @@ proxy:
       #
       - name: startup-delay
         image: busybox:stable
-        command: ["sh", "-c", "sleep 10"]
+        command: ["sh", "-c", "sleep 1"]
     extraEnv: {}
     extraVolumes: []
     extraVolumeMounts: []
