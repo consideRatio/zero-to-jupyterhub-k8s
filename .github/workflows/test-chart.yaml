@@ -136,3 +136,11 @@ jobs:
         if: always()
         with:
           important-workloads: deploy/hub deploy/proxy deploy/autohttps
+
+      # ref: https://github.com/jupyterhub/action-k8s-namespace-report
+      - name: Kubernetes namespace report (kube-system)
+        uses: jupyterhub/action-k8s-namespace-report@v1
+        if: always()
+        with:
+          important-workloads: ds/calico-node deploy/calico-kube-controllers
+          namespace: kube-system
