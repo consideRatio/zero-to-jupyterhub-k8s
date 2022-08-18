@@ -41,7 +41,7 @@ await_autohttps_tls_cert_acquisition() {
     i=0; while [ $i -ne 60 ]; do
         kubectl logs deploy/autohttps -c traefik | grep "Adding certificate" \
             && acquired_cert=true && break \
-            || acquired_cert=false && sleep 0.5 && i=$((i + 1))
+            || acquired_cert=false && sleep 1 && i=$((i + 1))
     done
     if [ "$acquired_cert" != "true" ]; then
         echo "Certificate acquisition failed!"
