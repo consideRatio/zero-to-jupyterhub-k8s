@@ -100,6 +100,7 @@ jobs:
 
       - run: |
           # docker pull busybox:stable
+          docker pull jupyterhub/k8s-secret-sync:2.0.0-beta.1
           docker pull traefik:v2.8.3
 
       # Install a local ACME server to fill the role of Let's Encrypt (LE). We
