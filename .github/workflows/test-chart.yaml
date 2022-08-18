@@ -99,8 +99,8 @@ jobs:
           docker-enabled: true
 
       - run: |
-          docker pull busybox:stable
-          docker pull traefik:v2.5.0-rc2
+          # docker pull busybox:stable
+          docker pull traefik:v2.8.3
 
       # Install a local ACME server to fill the role of Let's Encrypt (LE). We
       # do this as the HTTP challenge sent out by an ACME server must be able to
