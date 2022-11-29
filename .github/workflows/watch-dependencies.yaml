@@ -93,7 +93,7 @@ jobs:
       # ref: https://github.com/peter-evans/create-pull-request
       - name: Create a PR
         if: steps.local.outputs.tag != steps.latest.outputs.tag
-        uses: peter-evans/create-pull-request@v4.0.3
+        uses: peter-evans/create-pull-request@2b011faafdcbc9ceb11414d64d0573f37c774b04
         with:
           token: "${{ secrets.github_token }}"
           branch: update-image-${{ matrix.name }}
@@ -161,7 +161,7 @@ jobs:
       # ref: https://github.com/peter-evans/create-pull-request
       - name: Create a PR
         if: steps.local.outputs.version != steps.latest.outputs.version
-        uses: peter-evans/create-pull-request@v4.0.3
+        uses: peter-evans/create-pull-request@2b011faafdcbc9ceb11414d64d0573f37c774b04
         with:
           token: "${{ secrets.github_token }}"
           branch: update-jupyterhub
