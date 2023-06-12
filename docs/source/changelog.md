@@ -35,9 +35,6 @@ for details.
     configure `KubeSpawner.environment`, and to configure
     [`singleuser.profileList`](schema_singleuser.profileList) is to configure
     `KubeSpawner.profile_list`.
-- OAuthenticator 15.1.0 _will be_ upgraded to 16.0.0, _but isn't yet in the alpha.1 release_
-  - If you are using an JupyterHub Authenticator class from this package, please
-    read to the [OAuthenticator changelog]'s breaking changes.
 - TmpAuthenticator 0.6 is upgraded to 1.0.0
   - If you are using this JupyterHub Authenticator class, please read to the
     [TmpAuthenticator changelog]'s breaking changes.
@@ -53,7 +50,7 @@ for details.
 | -------------------------------------------------------------------------------- | ---------------- | ---------------- | ----------------------------------------------------------------------------------------- | ---------------------------------- |
 | [jupyterhub](https://github.com/jupyterhub/jupyterhub)                           | 3.0.0            | 4.0.1            | [Changelog](https://jupyterhub.readthedocs.io/en/stable/reference/changelog.html)         | Run in the `hub` pod               |
 | [kubespawner](https://github.com/jupyterhub/kubespawner)                         | 4.2.0            | 6.0.0            | [Changelog](https://jupyterhub-kubespawner.readthedocs.io/en/latest/changelog.html)       | Run in the `hub` pod               |
-| [oauthenticator](https://github.com/jupyterhub/oauthenticator)                   | 15.1.0           | 15.1.0 (16 soon) | [Changelog](https://oauthenticator.readthedocs.io/en/latest/reference/changelog.html)     | Run in the `hub` pod               |
+| [oauthenticator](https://github.com/jupyterhub/oauthenticator)                   | 15.1.0           | 15.1.0           | [Changelog](https://oauthenticator.readthedocs.io/en/latest/reference/changelog.html)     | Run in the `hub` pod               |
 | [ldapauthenticator](https://github.com/jupyterhub/ldapauthenticator)             | 1.3.2            | 1.3.2            | [Changelog](https://github.com/jupyterhub/ldapauthenticator/blob/HEAD/CHANGELOG.md)       | Run in the `hub` pod               |
 | [ltiauthenticator](https://github.com/jupyterhub/ltiauthenticator)               | 1.2.0            | 1.5.1            | [Changelog](https://github.com/jupyterhub/ltiauthenticator/blob/HEAD/CHANGELOG.md)        | Run in the `hub` pod               |
 | [nativeauthenticator](https://github.com/jupyterhub/nativeauthenticator)         | 1.1.0            | 1.2.1            | [Changelog](https://github.com/jupyterhub/nativeauthenticator/blob/HEAD/CHANGELOG.md)     | Run in the `hub` pod               |
