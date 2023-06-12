@@ -51,7 +51,7 @@ for details.
 
 | Dependency                                                                       | Version in 2.0.0 | Version in 3.0.0 | Changelog link                                                                            | Note                               |
 | -------------------------------------------------------------------------------- | ---------------- | ---------------- | ----------------------------------------------------------------------------------------- | ---------------------------------- |
-| [jupyterhub](https://github.com/jupyterhub/jupyterhub)                           | 3.0.0            | 4.0.0            | [Changelog](https://jupyterhub.readthedocs.io/en/stable/reference/changelog.html)         | Run in the `hub` pod               |
+| [jupyterhub](https://github.com/jupyterhub/jupyterhub)                           | 3.0.0            | 4.0.1            | [Changelog](https://jupyterhub.readthedocs.io/en/stable/reference/changelog.html)         | Run in the `hub` pod               |
 | [kubespawner](https://github.com/jupyterhub/kubespawner)                         | 4.2.0            | 6.0.0            | [Changelog](https://jupyterhub-kubespawner.readthedocs.io/en/latest/changelog.html)       | Run in the `hub` pod               |
 | [oauthenticator](https://github.com/jupyterhub/oauthenticator)                   | 15.1.0           | 15.1.0 (16 soon) | [Changelog](https://oauthenticator.readthedocs.io/en/latest/reference/changelog.html)     | Run in the `hub` pod               |
 | [ldapauthenticator](https://github.com/jupyterhub/ldapauthenticator)             | 1.3.2            | 1.3.2            | [Changelog](https://github.com/jupyterhub/ldapauthenticator/blob/HEAD/CHANGELOG.md)       | Run in the `hub` pod               |
@@ -98,6 +98,7 @@ For a detailed list of Python dependencies in the `hub` Pod's Docker image, insp
 
 - Helm chart url has changed [#3122](https://github.com/jupyterhub/zero-to-jupyterhub-k8s/pull/3122) ([@manics](https://github.com/manics))
 - Remove double word cluster in installation.md [#3119](https://github.com/jupyterhub/zero-to-jupyterhub-k8s/pull/3119) ([@cbowman0](https://github.com/cbowman0))
+- Clarify `hub.config` can configure KubeSpawner and more [#3104](https://github.com/jupyterhub/zero-to-jupyterhub-k8s/pull/3104) ([@JunaidChaudry](https://github.com/JunaidChaudry))
 - docs: fix readme badge for tests [#3094](https://github.com/jupyterhub/zero-to-jupyterhub-k8s/pull/3094) ([@consideRatio](https://github.com/consideRatio))
 - doc: singleuser.uid default is always 1000 [#3079](https://github.com/jupyterhub/zero-to-jupyterhub-k8s/pull/3079) ([@manics](https://github.com/manics))
 - Replace IEC prefixes link [#3073](https://github.com/jupyterhub/zero-to-jupyterhub-k8s/pull/3073) ([@manics](https://github.com/manics))
