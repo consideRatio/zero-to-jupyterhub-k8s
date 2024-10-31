@@ -18,9 +18,11 @@ updates:
   - package-ecosystem: pip
     directory: /images/hub/unfrozen
     labels: [breaking]
-    exclude-patterns:
-      # jupyterhub is bumped by other automation as its set in multiple files
-      - jupyterhub
+    groups:
+      major-versions:
+        update-types: [major]
+        exclude-patterns:
+          - jupyterhub # bumped by other automation
     schedule:
       interval: daily
       time: "05:00"
