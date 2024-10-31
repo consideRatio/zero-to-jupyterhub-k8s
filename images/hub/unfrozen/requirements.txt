@@ -11,7 +11,7 @@
 jupyterhub==5.2.1
 
 # JupyterHub Spawner, kubernetes specific
-jupyterhub-kubespawner==6.*
+jupyterhub-kubespawner==7.*
 
 # JupyterHub Authenticator choices
 jupyterhub-firstuseauthenticator==1.*
