@@ -23,6 +23,61 @@ proxy:
         mountPath: /etc/pebble/root-cert.pem
     extraEnv:
       LEGO_CA_CERTIFICATES: /etc/pebble/root-cert.pem
+      KUBERNETES_SERVICE_HOST:
+        valueFrom:
+          fieldRef:
+            fieldPath: status.hostIP
+      KUBERNETES_SERVICE_PORT: "6443"
+    networkPolicy:
+      ingress:
+        - from:
+            - podSelector:
+                matchLabels:
+                  app.kubernetes.io/name: pebble
+          ports:
+            - protocol: TCP
+              port: http
+            - protocol: TCP
+              port: https
+            - protocol: TCP
+              port: 80
+            - protocol: TCP
+              port: 443
+            - protocol: TCP
+              port: 8080
+            - protocol: TCP
+              port: 8443
+      allowedIngressPorts: [http, https, 80, 443, 8080, 8443]
+      egress:
+        - to:
+            - namespaceSelector:
+                matchLabels:
+                  kubernetes.io/metadata.name: kube-system
+          ports:
+            # For DNS.
+            - protocol: UDP
+              port: 53
+            - protocol: TCP
+              port: 53
+        - to:
+            - ipBlock:
+                cidr: 10.0.0.0/8
+          ports:
+            # For Kubernetes API access through the kubernetes Service.
+            - protocol: TCP
+              port: 443
+            - protocol: TCP
+              port: 6443
+        - to:
+            - podSelector:
+                matchLabels:
+                  app.kubernetes.io/name: pebble
+          ports:
+            # For ACME requests to Pebble.
+            - protocol: TCP
+              port: 443
+            - protocol: TCP
+              port: 8443
   chp:
     resources:
       requests:
@@ -63,17 +118,43 @@ hub:
     test-generation-of-apiToken: {}
   networkPolicy:
     egress: # overrides allowance of 0.0.0.0/0
-      - ports:
-          # In kind/k3s clusters the Kubernetes API server is exposing this port
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: kube-system
+        ports:
+          # For DNS.
+          - protocol: UDP
+            port: 53
+          - protocol: TCP
+            port: 53
+      - to:
+          - ipBlock:
+              cidr: 10.0.0.0/8
+        ports:
+          # For Kubernetes API access.
+          - protocol: TCP
+            port: 443
           - protocol: TCP
             port: 6443
-          # For testing postgres
+      - to:
+          - podSelector:
+              matchLabels:
+                app.kubernetes.io/name: postgresql
+        ports:
+          # For testing postgres.
           - protocol: TCP
             port: 5432
   resources:
     requests:
       memory: 0
       cpu: 0
+  extraEnv:
+    KUBERNETES_SERVICE_HOST:
+      valueFrom:
+        fieldRef:
+          fieldPath: status.hostIP
+    KUBERNETES_SERVICE_PORT: "6443"
   extraConfig:
     # emit logs associated with our pytest tests
     test_hub_existing_secret: |

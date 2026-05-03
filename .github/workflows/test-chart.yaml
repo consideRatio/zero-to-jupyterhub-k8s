@@ -234,12 +234,24 @@ jobs:
       # kubectl and helm
       #
       # ref: https://github.com/jupyterhub/action-k3s-helm/
-      - uses: jupyterhub/action-k3s-helm@v4
+      - uses: consideRatio/action-k3s-helm@codex/cni-cri-support-inputs
         with:
           k3s-channel: ${{ matrix.k3s-channel }}
-          metrics-enabled: false
-          traefik-enabled: false
-          docker-enabled: true
+          helm-version: v3.20.2
+          cni-provider: cilium
+          cri-runtime: docker
+          resource-metrics-support: false
+          loadbalancer-service-support: false
+          ingress-support: false
+
+      - name: Configure Cilium CIDR matching for node-hosted API
+        run: |
+          kubectl patch configmap/cilium-config -n kube-system \
+              --type=merge \
+              -p '{"data":{"policy-cidr-match-mode":"nodes"}}'
+          kubectl rollout restart daemonset/cilium -n kube-system
+          kubectl rollout status --watch --timeout=2m daemonset/cilium -n kube-system
+          cilium status --wait
 
       - uses: actions/setup-python@v6
         with:
@@ -278,6 +290,11 @@ jobs:
         with:
           timeout: 150
           max-restarts: 1
+
+      - name: Configure local ACME validation route
+        run: |
+          . ./ci/common
+          configure_pebble_http01_resolver
 
       - name: "(Upgrade) Install PostgreSQL server chart"
         if: matrix.setup-postgresql-args
@@ -349,6 +366,7 @@ jobs:
         if: matrix.test == 'upgrade'
         run: |
           . ./ci/common
+          configure_pebble_http01_resolver
           await_autohttps_tls_cert_acquisition
           await_autohttps_tls_cert_save
 
@@ -373,6 +391,7 @@ jobs:
       - name: Await local chart cert acquisition
         run: |
           . ./ci/common
+          configure_pebble_http01_resolver
           await_autohttps_tls_cert_acquisition
 
       - name: Run tests

@@ -1,10 +1,16 @@
-# This configuration is meant to map lookups of local.jovyan.org to the
-# ClusterIP of JupyterHub's proxy-public service
+# This configuration maps local.jovyan.org to a headless Service selecting
+# JupyterHub's autohttps pod. Pebble validates HTTP-01 on the pod's HTTP port
+# to avoid relying on ClusterIP, LoadBalancer IP, or NodePort policy handling.
 #
 # ref: https://github.com/jupyterhub/pebble-helm-chart/blob/HEAD/pebble/values.yaml
 #
+pebble:
+  config:
+    pebble:
+      httpPort: 8080
+
 coredns:
   corefileSegment: |-
     template ANY ANY local.jovyan.org {
-      answer "{{ .Name }} 60 IN CNAME proxy-public.{$PEBBLE_NAMESPACE}.svc.cluster.local"
+      answer "{{ .Name }} 60 IN CNAME proxy-public-direct.{$PEBBLE_NAMESPACE}.svc.cluster.local"
     }
