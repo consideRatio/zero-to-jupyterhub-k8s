@@ -4,10 +4,6 @@ proxy:
     nodePorts:
       http: 30080
       https: 30443
-    extraPorts:
-      - name: http-acme
-        port: 8080
-        targetPort: http
   https:
     enabled: true
     type: letsencrypt

@@ -1,13 +1,12 @@
-# This configuration maps local.jovyan.org to JupyterHub's proxy-public
-# Service, and has Pebble validate HTTP-01 on a service port matching
-# Traefik's pod HTTP port.
+# This configuration is meant to map lookups of local.jovyan.org to the
+# ClusterIP of JupyterHub's proxy-public service.
 #
 # ref: https://github.com/jupyterhub/pebble-helm-chart/blob/HEAD/pebble/values.yaml
 #
 pebble:
-  config:
-    pebble:
-      httpPort: 8080
+  env:
+    - name: PEBBLE_VA_ALWAYS_VALID
+      value: "1"
 
 coredns:
   corefileSegment: |-
