@@ -1,6 +1,6 @@
-# Pebble validates HTTP-01 on Traefik's pod HTTP port. CI rewrites Pebble's
-# CoreDNS config to resolve local.jovyan.org to the autohttps pod IP after the
-# chart has been installed.
+# This configuration maps local.jovyan.org to a headless Service selecting
+# JupyterHub's autohttps pod. Pebble validates HTTP-01 on the pod's HTTP port
+# to avoid relying on ClusterIP, LoadBalancer IP, or NodePort policy handling.
 #
 # ref: https://github.com/jupyterhub/pebble-helm-chart/blob/HEAD/pebble/values.yaml
 #
@@ -12,5 +12,5 @@ pebble:
 coredns:
   corefileSegment: |-
     template ANY ANY local.jovyan.org {
-      rcode NXDOMAIN
+      answer "{{ .Name }} 60 IN CNAME proxy-public-direct.{$PEBBLE_NAMESPACE}.svc.cluster.local"
     }

@@ -291,6 +291,11 @@ jobs:
           timeout: 150
           max-restarts: 1
 
+      - name: Configure local ACME validation route
+        run: |
+          . ./ci/common
+          configure_pebble_http01_resolver
+
       - name: "(Upgrade) Install PostgreSQL server chart"
         if: matrix.setup-postgresql-args
         run: |
