@@ -72,53 +72,6 @@ spec:
         - protocol: TCP
           port: 8443
 EOF
-    kubectl apply -f - <<EOF
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-pebble-acme-validation-egress
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: pebble
-  policyTypes:
-    - Egress
-  egress:
-    - to:
-        - namespaceSelector: {}
-          podSelector:
-            matchLabels:
-              component: autohttps
-              app: jupyterhub
-              release: jupyterhub
-      ports:
-        - protocol: TCP
-          port: http
-        - protocol: TCP
-          port: https
-        - protocol: TCP
-          port: 80
-        - protocol: TCP
-          port: 443
-        - protocol: TCP
-          port: 8080
-        - protocol: TCP
-          port: 8443
-    - to:
-        - namespaceSelector: {}
-          podSelector:
-            matchLabels:
-              app.kubernetes.io/name: pebble-coredns
-      ports:
-        - protocol: UDP
-          port: 53
-        - protocol: TCP
-          port: 53
-        - protocol: UDP
-          port: 8053
-        - protocol: TCP
-          port: 8053
-EOF
 }
 
 await_autohttps_tls_cert_acquisition() {
