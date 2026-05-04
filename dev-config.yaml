@@ -35,7 +35,8 @@ proxy:
     networkPolicy:
       ingress:
         - from:
-            - podSelector:
+            - namespaceSelector: {}
+              podSelector:
                 matchLabels:
                   app.kubernetes.io/name: pebble
           ports:
@@ -73,7 +74,8 @@ proxy:
             - protocol: TCP
               port: 6443
         - to:
-            - podSelector:
+            - namespaceSelector: {}
+              podSelector:
                 matchLabels:
                   app.kubernetes.io/name: pebble
           ports:
