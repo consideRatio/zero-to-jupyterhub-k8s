@@ -37,26 +37,6 @@ await_jupyterhub() {
     )
 }
 
-configure_pebble_http01_resolver() {
-    echo "Configuring Pebble HTTP-01 resolver to use autohttps pod IPs"
-    kubectl apply -f - <<EOF
-apiVersion: v1
-kind: Service
-metadata:
-  name: proxy-public-direct
-spec:
-  clusterIP: None
-  selector:
-    component: autohttps
-    app: jupyterhub
-    release: jupyterhub
-  ports:
-    - name: http
-      port: 8080
-      targetPort: http
-EOF
-}
-
 await_autohttps_tls_cert_acquisition() {
     for attempt in 1 2; do
         i=0; while [ $i -ne 60 ]; do
