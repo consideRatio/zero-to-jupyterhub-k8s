@@ -38,23 +38,47 @@ await_jupyterhub() {
 }
 
 configure_pebble_http01_resolver() {
-    echo "Configuring Pebble HTTP-01 resolver to use autohttps pod IPs"
+    local autohttps_pod_ip
+
+    i=0; while [ $i -ne 120 ]; do
+        autohttps_pod_ip=$(kubectl get pod \
+            -l app.kubernetes.io/component=autohttps \
+            -o jsonpath='{.items[0].status.podIP}' 2>/dev/null || true)
+        [ -n "$autohttps_pod_ip" ] && break
+        sleep 0.5
+        i=$((i + 1))
+    done
+
+    if [ -z "$autohttps_pod_ip" ]; then
+        echo "Timed out waiting for autohttps pod IP!"
+        kubectl get pod -l app.kubernetes.io/component=autohttps -o wide
+        exit 1
+    fi
+
+    echo "Configuring Pebble HTTP-01 resolver to use autohttps pod IP $autohttps_pod_ip"
     kubectl apply -f - <<EOF
 apiVersion: v1
-kind: Service
+kind: ConfigMap
 metadata:
-  name: proxy-public-direct
-spec:
-  clusterIP: None
-  selector:
-    component: autohttps
-    app: jupyterhub
-    release: jupyterhub
-  ports:
-    - name: http
-      port: 8080
-      targetPort: http
+  name: pebble-coredns
+data:
+  Corefile: |-
+    .:8053 {
+      errors
+      health
+      ready
+      template ANY ANY local.jovyan.org {
+        answer "{{ .Name }} 60 IN A $autohttps_pod_ip"
+      }
+      forward . /etc/resolv.conf
+      cache 2
+      reload
+    }
 EOF
+    kubectl rollout restart deployment/pebble-coredns
+    await_kubectl_rollout deployment/pebble-coredns
+    kubectl rollout restart deployment/autohttps
+    await_kubectl_rollout deployment/autohttps
 }
 
 await_autohttps_tls_cert_acquisition() {
