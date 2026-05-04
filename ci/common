@@ -75,29 +75,10 @@ EOF
 }
 
 await_autohttps_tls_cert_acquisition() {
-    for attempt in 1 2; do
-        i=0; while [ $i -ne 60 ]; do
-            kubectl logs deploy/autohttps -c traefik | grep "Adding certificate" \
-                && acquired_cert=true && break \
-                || acquired_cert=false && sleep 0.5 && i=$((i + 1))
-        done
-
-        if [ "$acquired_cert" = "true" ]; then
-            break
-        elif [ "$attempt" = "1" ]; then
-            echo "Certificate was not acquired yet; restarting autohttps once to retry ACME validation."
-            kubectl scale deployment/autohttps --replicas=0
-            i=0; while kubectl get pod -l app.kubernetes.io/component=autohttps --no-headers | grep -q .; do
-                if [ $i -eq 120 ]; then
-                    echo "Timed out waiting for autohttps pods to stop!"
-                    exit 1
-                fi
-                sleep 0.5
-                i=$((i + 1))
-            done
-            kubectl scale deployment/autohttps --replicas=1
-            await_kubectl_rollout deployment/autohttps
-        fi
+    i=0; while [ $i -ne 60 ]; do
+        kubectl logs deploy/autohttps -c traefik | grep "Adding certificate" \
+            && acquired_cert=true && break \
+            || acquired_cert=false && sleep 0.5 && i=$((i + 1))
     done
 
     if [ "$acquired_cert" != "true" ]; then
