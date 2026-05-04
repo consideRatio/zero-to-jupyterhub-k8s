@@ -37,6 +37,43 @@ await_jupyterhub() {
     )
 }
 
+configure_pebble_acme_network_policy() {
+    echo "Configuring Pebble HTTP-01 access to autohttps"
+    kubectl apply -f - <<EOF
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-pebble-to-autohttps
+spec:
+  podSelector:
+    matchLabels:
+      component: autohttps
+      app: jupyterhub
+      release: jupyterhub
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: pebble
+      ports:
+        - protocol: TCP
+          port: http
+        - protocol: TCP
+          port: https
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 8443
+EOF
+}
+
 await_autohttps_tls_cert_acquisition() {
     for attempt in 1 2; do
         i=0; while [ $i -ne 60 ]; do
